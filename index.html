@@ -1,0 +1,2491 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>钱途记 · 家庭理财计算</title>
+<style>
+  :root{
+    --scale:1;
+    --u: calc(1px * var(--scale));            /* 布局单位，随字号整体缩放 */
+    --pr:15; --pg:163; --pb:122;              /* 花纹取色（青绿） */
+    --primary:#0fa37a; --primary2:#06b6d4;    /* 主色渐变 */
+    --inc:#1a9e5c; --exp:#e0413e; --bal:#2c6fd6;   /* 收入绿 / 支出红 / 结余蓝（三色强区分，一眼明了） */
+    --bg:#eef1f3; --card:#fff; --ink:#1f2933; --muted:#7c828a; --line:#ececef;
+  }
+  html{ font-size: calc(16px * var(--scale)); }
+  html.care{ --ink:#10151b; --muted:#434b55; }
+  html.eyecare{ --bg:#f3ece0; --card:#fffdf7; --ink:#3a2f23; --muted:#7a6f5e; --line:#e7ddcd; --pr:150; --pg:120; --pb:90; }
+  html.night{ --bg:#1b1f24; --card:#262b31; --ink:#e8ebed; --muted:#9aa3ab; --line:#333a42; --inc:#37c878; --exp:#ff6b66; --pr:80; --pg:200; --pb:160; }
+  html.night.eyecare{ --bg:#171b20; --card:#22272d; }
+
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg); color:var(--ink); font-size:0.9375rem;
+    line-height: calc(1.6 + (var(--care,0)) *0.45);
+    letter-spacing: calc((var(--care,0)) *0.02em);
+  }
+  /* 背景花纹（仅保留：无 / 圆点 / 方格，提高可见度） */
+  body.pat-dots{ background-image:radial-gradient(rgba(var(--pr),var(--pg),var(--pb),.30) 1.9px, transparent 2px); background-size:calc(20*var(--u)) calc(20*var(--u)); background-position:center; }
+  body.pat-grid{ background-image:linear-gradient(rgba(var(--pr),var(--pg),var(--pb),.18) 1px,transparent 1px),linear-gradient(90deg,rgba(var(--pr),var(--pg),var(--pb),.18) 1px,transparent 1px); background-size:calc(26*var(--u)) calc(26*var(--u)); }
+
+  .app{max-width:520px;margin:0 auto;min-height:100vh;background:transparent;padding-bottom:calc(20*var(--u));}
+
+  /* 顶部标题 + 设置 */
+  .top{position:relative;background:linear-gradient(135deg,var(--primary),var(--primary2));
+       color:#fff;padding:calc(16*var(--u)) calc(18*var(--u)) calc(14*var(--u));}
+  .top .t1{font-size:1.25rem;font-weight:800;letter-spacing:1px;}
+  .top .t2{font-size:0.75rem;opacity:.9;margin-top:calc(2*var(--u));}
+  .sizebtn{position:absolute;top:calc(14*var(--u));right:calc(14*var(--u));background:rgba(255,255,255,.22);color:#fff;
+       border:1px solid rgba(255,255,255,.5);border-radius:999px;padding:calc(6*var(--u)) calc(16*var(--u));font-size:0.8125rem;}
+
+  /* 横向滚动 Tab */
+  .nav{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);
+       display:flex;gap:calc(8*var(--u));overflow-x:auto;padding:calc(10*var(--u)) calc(14*var(--u));border-bottom:1px solid var(--line);}
+  html.night .nav{background:rgba(27,31,36,.92);}
+  .nav::-webkit-scrollbar{display:none;}
+  .tab{white-space:nowrap;padding:calc(7*var(--u)) calc(15*var(--u));border-radius:999px;font-size:0.8125rem;
+       background:#eef1f0;color:#4a5159;border:none;}
+  html.night .tab{background:#2f353c;color:#aeb6bd;}
+  .tab.on{background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff;font-weight:600;}
+
+  main{padding:calc(14*var(--u));}
+  .panel{display:none;}
+  .panel.act{display:block;animation:fade .22s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+  .card{background:var(--card);border-radius:calc(18*var(--u));padding:calc(16*var(--u));margin-bottom:calc(12*var(--u));
+        box-shadow:0 calc(2*var(--u)) calc(10*var(--u)) rgba(51,55,61,.06);}
+  .ttl{font-size:1.0rem;font-weight:700;display:flex;align-items:center;flex-wrap:wrap;margin-bottom:calc(4*var(--u));}
+  .ttl .bar{width:calc(4*var(--u));height:calc(16*var(--u));background:linear-gradient(var(--primary),var(--primary2));border-radius:3px;margin-right:calc(8*var(--u));}
+  .clr{margin-left:auto;font-size:0.8125rem;color:var(--muted);background:none;border:none;}
+  .hint{font-size:0.75rem;color:var(--muted);background:#f1f8f5;border-radius:calc(10*var(--u));
+        padding:calc(8*var(--u)) calc(10*var(--u));margin:calc(8*var(--u)) 0 calc(12*var(--u));line-height:1.6;}
+  html.night .hint{background:rgba(255,255,255,.06);}
+  .field{display:flex;align-items:center;margin-bottom:calc(10*var(--u));}
+  .field label{flex:0 0 calc(92*var(--u));font-size:0.8125rem;color:#4a5159;}
+  html.night .field label{color:#aeb6bd;}
+  .field input,.field select{flex:1;height:calc(44*var(--u));border:1px solid var(--line);border-radius:calc(10*var(--u));
+        padding:0 calc(12*var(--u));font-size:0.9375rem;background:#fafbfb;color:var(--ink);min-width:0;}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--primary);background:#fff;}
+  html.night .field input,html.night .field select{background:#1f242a;color:var(--ink);}
+  .field .u{flex:0 0 auto;font-size:0.75rem;color:var(--muted);margin-left:calc(8*var(--u));}
+  .seg{display:flex;gap:calc(8*var(--u));margin-bottom:calc(12*var(--u));}
+  .seg button{flex:1;height:calc(40*var(--u));border:1px solid var(--line);border-radius:calc(10*var(--u));
+        background:#fafbfb;color:var(--muted);font-size:0.8125rem;cursor:pointer;}
+  html.night .seg button{background:#1f242a;color:#aeb6bd;}
+  .seg button.on{background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff;border-color:transparent;font-weight:700;box-shadow:0 calc(2*var(--u)) calc(6*var(--u)) rgba(15,163,122,.35);}
+  .addbtn{width:100%;height:calc(46*var(--u));border:1px dashed var(--primary);background:#f1f8f5;color:var(--primary);
+        border-radius:calc(10*var(--u));font-size:0.875rem;font-weight:600;cursor:pointer;}
+  html.night .addbtn{background:rgba(255,255,255,.05);}
+
+  /* 明细行 */
+  .irow{display:flex;align-items:center;gap:calc(6*var(--u));margin-bottom:calc(8*var(--u));}
+  .irow input{height:calc(40*var(--u));border:1px solid var(--line);border-radius:calc(9*var(--u));padding:0 calc(10*var(--u));font-size:0.875rem;background:#fafbfb;min-width:0;}
+  html.night .irow input{background:#1f242a;color:var(--ink);}
+  .irow .idate{flex:1 1 30%;}
+  .irow .iamt{flex:1 1 30%;}
+  .irow .idel{flex:0 0 calc(32*var(--u));height:calc(34*var(--u));border:none;background:#fdecec;color:#c0392b;border-radius:calc(8*var(--u));font-size:1.0rem;cursor:pointer;}
+
+  /* 结果区 */
+  .res{background:#f1f8f5;border-radius:calc(12*var(--u));padding:calc(14*var(--u));margin-top:calc(4*var(--u));animation:fade .18s ease;}
+  html.night .res{background:rgba(255,255,255,.06);}
+  .stats{display:flex;gap:calc(8*var(--u));margin-bottom:calc(10*var(--u));flex-wrap:wrap;}
+  .stat{flex:1;min-width:calc(86*var(--u));background:var(--card);border-radius:calc(10*var(--u));padding:calc(10*var(--u));text-align:center;border:1px solid var(--line);}
+  .stat .k{font-size:0.6875rem;color:var(--muted);}
+  .stat .v{font-size:1.0625rem;font-weight:700;margin-top:calc(2*var(--u));color:var(--primary);}
+  .stat.inc .v{color:var(--inc);} .stat.exp .v{color:var(--exp);}
+  .tips{margin-top:calc(10*var(--u));font-size:0.75rem;line-height:1.7;}
+  .tips .t{color:var(--exp);}
+  .tips .ok{color:var(--inc);}
+  table.bd{width:100%;border-collapse:collapse;margin-top:calc(8*var(--u));font-size:0.8125rem;}
+  table.bd td{padding:calc(8*var(--u)) calc(6*var(--u));border-bottom:1px solid var(--line);}
+  table.bd td:last-child{text-align:right;font-weight:600;color:var(--primary);}
+
+  /* 进度条 */
+  .pgwrap{margin-top:calc(10*var(--u));}
+  .pgbar{height:calc(16*var(--u));border-radius:999px;background:#ececef;overflow:hidden;}
+  html.night .pgbar{background:#333a42;}
+  .pgfill{height:100%;border-radius:999px;background:linear-gradient(135deg,var(--primary),var(--primary2));transition:width .35s ease;}
+  .pglabel{text-align:center;font-size:0.75rem;color:var(--muted);margin-top:calc(6*var(--u));}
+
+  /* 收入/支出箭头（色盲关怀：颜色 + 箭头方向双重区分，保留） */
+  .arr{font-weight:800;margin-right:calc(4*var(--u));}
+  .inc{color:var(--inc);} .exp{color:var(--exp);}
+
+  /* 列表（固定高度、上下滑动） */
+  .listhdr{font-size:0.75rem;color:var(--muted);margin:calc(6*var(--u)) 0 calc(4*var(--u));}
+  .scroll{max-height:calc(220*var(--u));overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  .scroll::-webkit-scrollbar{width:4px;} .scroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px;}
+  .dzlist{margin-top:calc(4*var(--u));display:flex;flex-direction:column;gap:calc(6*var(--u));}
+  .dzitem{display:flex;align-items:center;gap:calc(8*var(--u));font-size:0.8125rem;padding:calc(8*var(--u)) calc(10*var(--u));background:#f6f8f7;border-radius:calc(10*var(--u));}
+  html.night .dzitem{background:rgba(255,255,255,.06);}
+  .dzitem .dot{width:calc(9*var(--u));height:calc(9*var(--u));border-radius:3px;flex:0 0 auto;}
+  .dzitem .cmeta{flex:1;display:flex;flex-direction:column;gap:calc(2*var(--u));min-width:0;}
+  .dzitem .cn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .dzitem .csrc{font-size:0.6875rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .dzitem .camt{font-weight:700;flex:0 0 auto;min-width:calc(72*var(--u));text-align:right;font-variant-numeric:tabular-nums;}
+  .camtInput{width:calc(96*var(--u));height:calc(34*var(--u));border:1px solid var(--line);border-radius:calc(8*var(--u));padding:0 calc(8*var(--u));font-size:0.8125rem;background:#fafbfb;text-align:right;}
+  html.night .camtInput{background:#1f242a;color:var(--ink);}
+  .dzitem .cdel{flex:0 0 auto;border:none;background:#fdecec;color:#c0392b;width:calc(28*var(--u));height:calc(28*var(--u));border-radius:calc(7*var(--u));font-size:1.0rem;cursor:pointer;}
+  .dzitem .cedit{flex:0 0 auto;border:1px solid var(--line);background:#eef4f2;color:var(--primary);width:calc(34*var(--u));height:calc(28*var(--u));border-radius:calc(7*var(--u));font-size:0.75rem;cursor:pointer;}
+  .dzitem .cedit.on{background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff;border-color:transparent;}
+
+  /* 分类滑动选择框（固定大小，可横滑） */
+  .catwrap{margin-bottom:calc(10*var(--u));}
+  .catroll{display:flex;gap:calc(8*var(--u));overflow-x:auto;padding:calc(2*var(--u));height:calc(46*var(--u));align-items:center;}
+  .catroll::-webkit-scrollbar{display:none;}
+  .chip{flex:0 0 auto;height:calc(36*var(--u));padding:0 calc(14*var(--u));border-radius:999px;border:1px solid var(--line);
+        background:#fafbfb;color:#4a5159;font-size:0.8125rem;white-space:nowrap;cursor:pointer;}
+  html.night .chip{background:#1f242a;color:#aeb6bd;}
+  .chip.on{background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff;border-color:transparent;font-weight:600;}
+  .chip.custom{color:var(--primary);border-style:dashed;}
+  .custrow{display:flex;gap:calc(8*var(--u));align-items:center;}
+  .custrow input{flex:1;height:calc(44*var(--u));border:1px solid var(--line);border-radius:calc(10*var(--u));padding:0 calc(12*var(--u));font-size:0.875rem;background:#fafbfb;min-width:0;}
+  html.night .custrow input{background:#1f242a;color:var(--ink);}
+  .custrow input:focus{outline:none;border-color:var(--primary);background:#fff;}
+  .custback{flex:0 0 auto;height:calc(44*var(--u));padding:0 calc(14*var(--u));border:1px solid var(--line);border-radius:calc(10*var(--u));background:var(--card);color:#4a5159;font-size:0.8125rem;cursor:pointer;}
+  html.night .custback{color:#aeb6bd;}
+
+  .pie{width:calc(150*var(--u));height:calc(150*var(--u));border-radius:50%;margin:calc(14*var(--u)) auto;position:relative;background:#eee;}
+  html.night .pie{background:#333a42;}
+  .piec{position:absolute;inset:calc(28*var(--u));background:var(--card);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+        font-size:0.9375rem;font-weight:700;color:var(--primary);text-align:center;padding:calc(6*var(--u));}
+  .piec .piecbal{font-weight:800;font-size:1.0625rem;color:var(--bal);line-height:1.2;}
+  .piec .pieclab{font-size:0.6875rem;color:var(--muted);font-weight:600;margin-top:calc(2*var(--u));}
+  .legend{display:flex;flex-direction:column;gap:calc(6*var(--u));margin-top:calc(6*var(--u));}
+  .legend .lg{display:flex;align-items:center;gap:calc(8*var(--u));font-size:0.8125rem;}
+  .legend .lg .dot{width:calc(10*var(--u));height:calc(10*var(--u));border-radius:3px;flex:0 0 auto;}
+  .legend .lg .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .legend .lg .pc{color:var(--muted);}
+  .legend .lg .tag{display:inline-block;margin-left:calc(6*var(--u));padding:0 calc(6*var(--u));border-radius:calc(8*var(--u));font-size:0.6875rem;line-height:1.6;font-weight:600;}
+  .legend .lg .tag.inc{color:#0c7d49;background:rgba(26,158,92,0.14);}
+  .legend .lg .tag.exp{color:#b32d2a;background:rgba(224,65,62,0.14);}
+  .legend .lg.note{font-size:0.75rem;color:var(--muted);font-weight:500;}
+  /* —— 消费趋势图（账本汇总页） —— */
+  .trendctrl{display:flex;flex-direction:column;gap:calc(10*var(--u));margin:calc(10*var(--u)) 0 calc(6*var(--u));}
+  .trendctrl .trow{display:flex;gap:calc(8*var(--u));align-items:center;}
+  .trendctrl .trow .tlabel{flex:0 0 auto;font-size:0.75rem;color:var(--muted);}
+  .trendctrl select.sel{flex:1;min-width:0;height:calc(36*var(--u));border:1px solid var(--line);background:var(--card);color:var(--ink);
+        border-radius:calc(8*var(--u));padding:0 calc(8*var(--u));font-size:0.8125rem;cursor:pointer;}
+  .trendctrl select.tcat{width:100%;flex:none;}
+  .trendctrl .tseg{display:flex;width:100%;}
+  .trendctrl .tseg button{flex:1;height:calc(34*var(--u));}
+  html.night .trendctrl select.sel{background:#1f242a;color:var(--ink);}
+  .dzchart{width:100%;height:calc(220*var(--u));display:block;margin-top:calc(6*var(--u));}
+  .chart-empty{width:100%;height:calc(220*var(--u));display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:0.8125rem;}
+  .trendnote{font-size:0.7rem;color:var(--muted);line-height:1.6;margin-top:calc(8*var(--u));}
+  /* 趋势图点击明细弹窗 */
+  .charttip{position:fixed;z-index:60;min-width:calc(120*var(--u));max-width:calc(220*var(--u));
+    background:var(--card);border:1px solid var(--line);border-radius:calc(10*var(--u));
+    box-shadow:0 calc(8*var(--u)) calc(24*var(--u)) rgba(0,0,0,0.18);padding:calc(10*var(--u)) calc(12*var(--u));
+    font-size:0.8125rem;color:var(--ink);pointer-events:none;animation:tipIn .12s ease;}
+  html.night .charttip{background:#262b31;box-shadow:0 calc(8*var(--u)) calc(24*var(--u)) rgba(0,0,0,0.5);}
+  .charttip[hidden]{display:none;}
+  .charttip .ctit{display:flex;align-items:center;gap:calc(6*var(--u));font-weight:700;font-size:0.9375rem;}
+  .charttip .ctit .cdot{width:calc(10*var(--u));height:calc(10*var(--u));border-radius:50%;flex:0 0 auto;}
+  .charttip .camt2{font-weight:800;font-size:1.0625rem;margin-top:calc(3*var(--u));color:var(--primary);}
+  .charttip .camt2.exp{color:var(--exp);} .charttip .camt2.inc{color:var(--inc);}
+  .charttip .csub{font-size:0.75rem;color:var(--muted);margin-top:calc(3*var(--u));line-height:1.5;}
+  @keyframes tipIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+  .ghost{width:100%;margin-top:calc(12*var(--u));height:calc(40*var(--u));border:1px solid var(--line);background:var(--card);color:#4a5159;border-radius:calc(10*var(--u));font-size:0.8125rem;cursor:pointer;}
+  html.night .ghost{color:#aeb6bd;}
+  .srow{display:flex;gap:calc(8*var(--u));flex-wrap:wrap;}
+  .srow button{border:1px solid var(--line);background:var(--card);color:#4a5159;border-radius:calc(10*var(--u));padding:calc(7*var(--u)) calc(14*var(--u));font-size:0.8125rem;cursor:pointer;transition:.15s;}
+  .srow button.on{background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff;border-color:transparent;font-weight:600;}
+  html.night .srow button{background:#1f242a;color:#aeb6bd;}
+
+  .chips{display:flex;flex-wrap:wrap;gap:calc(10*var(--u));}
+  .chips button{background:#eef1f0;color:#4a5159;border:none;border-radius:999px;padding:calc(10*var(--u)) calc(16*var(--u));font-size:0.9375rem;cursor:pointer;}
+  html.night .chips button{background:#2f353c;color:#aeb6bd;}
+  .chips button:active{background:#e0e6e4;}
+  .bubble{background:#f1f8f5;border-radius:calc(14*var(--u));padding:calc(18*var(--u));font-size:1.0625rem;line-height:1.8;}
+  html.night .bubble{background:rgba(255,255,255,.06);}
+  .bubble b{color:var(--primary);}
+  .tip{font-size:0.8125rem;padding:calc(10*var(--u)) calc(12*var(--u));border-radius:calc(10*var(--u));background:#fff7e6;color:#9a6b00;}
+  .tip.err{background:#fdecec;color:#c0392b;}
+  /* —— 聊天式智能问答 —— */
+  .aicard{display:flex;flex-direction:column;}
+  /* 智能问答标题栏右侧：胶囊按钮组（往期对话 / 新对话） */
+  .aiacts{margin-left:auto;display:flex;align-items:center;flex-wrap:nowrap;gap:calc(8*var(--u));}
+  .aibtn{display:inline-flex;align-items:center;gap:calc(4*var(--u));border-radius:999px;font-size:0.75rem;font-weight:700;
+    cursor:pointer;padding:calc(6*var(--u)) calc(12*var(--u));border:1.5px solid var(--line);background:var(--card);color:var(--ink);
+    transition:transform .12s,box-shadow .12s,border-color .12s,color .12s;white-space:nowrap;}
+  .aibtn .ico{font-size:0.75rem;line-height:1;}
+  .aibtn .badge{background:var(--exp);color:#fff;border-radius:999px;padding:0 calc(5*var(--u));font-size:0.625rem;line-height:1.6;margin-left:calc(2*var(--u));}
+  .aibtn.ghost{color:var(--muted);}
+  .aibtn.ghost:hover{color:var(--primary);border-color:var(--primary);background:rgba(15,163,122,.06);}
+  .aibtn:active{transform:scale(.94);}
+  html.night .aibtn{background:#1f242a;border-color:#333a42;}
+  html.night .aibtn.ghost:hover{background:rgba(15,163,122,.14);}
+  /* 「往期对话」与「新对话」完全同款、等宽并列，避免主操作被误当成大按钮误触 */
+  .aiacts .aibtn{min-width:calc(88*var(--u));justify-content:center;}
+  .chatbox{height:58vh;overflow-y:auto;display:flex;flex-direction:column;gap:calc(10*var(--u));padding:calc(10*var(--u)) calc(2*var(--u));scroll-behavior:smooth;}
+  .msg{max-width:84%;padding:calc(9*var(--u)) calc(13*var(--u));border-radius:calc(16*var(--u));font-size:0.875rem;line-height:1.75;word-break:break-word;white-space:pre-wrap;}
+  .msg .mts{display:block;font-size:0.625rem;margin-top:calc(3*var(--u));opacity:.65;}
+  .msg.user{align-self:flex-end;background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff;border-bottom-right-radius:calc(5*var(--u));}
+  .msg.ai{align-self:flex-start;background:#f1f8f5;border-bottom-left-radius:calc(5*var(--u));}
+  .msg.ai b{color:var(--primary);}
+  html.night .msg.ai{background:rgba(255,255,255,.07);}
+  .msg.errm{align-self:center;background:#fdecec;color:#c0392b;font-size:0.75rem;max-width:92%;text-align:center;border-radius:calc(10*var(--u));}
+  html.night .msg.errm{background:rgba(224,65,62,.18);color:#ff8a85;}
+  .msg .memtag{display:inline-block;margin-bottom:calc(4*var(--u));padding:0 calc(8*var(--u));border-radius:999px;font-size:0.625rem;background:rgba(44,111,214,.12);color:var(--bal);font-weight:700;}
+  .typing{display:inline-flex;gap:calc(4*var(--u));align-items:center;padding:calc(4*var(--u)) 0;}
+  .typing span{width:calc(6*var(--u));height:calc(6*var(--u));border-radius:50%;background:var(--muted);animation:aiblink 1.2s infinite;}
+  .typing span:nth-child(2){animation-delay:.2s;} .typing span:nth-child(3){animation-delay:.4s;}
+  @keyframes aiblink{0%,80%,100%{opacity:.25;transform:translateY(0);}40%{opacity:1;transform:translateY(calc(-2*var(--u)));}}
+  .chatsugg{display:flex;flex-wrap:wrap;gap:calc(8*var(--u));margin:calc(8*var(--u)) 0 0;}
+  .chatsugg button{background:#eef1f0;color:#4a5159;border:none;border-radius:999px;padding:calc(8*var(--u)) calc(14*var(--u));font-size:0.8125rem;cursor:pointer;}
+  html.night .chatsugg button{background:#2f353c;color:#aeb6bd;}
+  /* 胶囊式输入栏：发送按钮内嵌在输入框右侧（参考聊天 App 样式），宽随卡片、高随内容自适应 */
+  .chatpill{display:flex;align-items:flex-end;gap:calc(8*var(--u));margin-top:calc(10*var(--u));
+    border:1.5px solid var(--line);background:var(--card);border-radius:calc(26*var(--u));
+    padding:calc(6*var(--u)) calc(7*var(--u)) calc(6*var(--u)) calc(18*var(--u));}
+  .chatpill:focus-within{border-color:var(--primary);}
+  html.night .chatpill{background:#1f242a;border-color:#333a42;}
+  .chatpill textarea{flex:1;min-width:0;border:none;background:transparent;color:var(--ink);
+    font-size:0.9375rem;line-height:1.5;font-family:inherit;padding:calc(7*var(--u)) 0;
+    max-height:calc(120*var(--u));resize:none;}
+  .chatpill textarea:focus{outline:none;}
+  .chatpill textarea::placeholder{color:var(--muted);}
+  .chatpill .pisend{flex:0 0 auto;width:calc(34*var(--u));height:calc(34*var(--u));border:none;border-radius:50%;
+    background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff;font-size:0.875rem;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;
+    transition:opacity .15s, transform .15s;}
+  .chatpill .pisend:hover{transform:scale(1.08);}
+  .chatpill .pisend:disabled{opacity:.4;cursor:default;transform:none;}
+  .aihist .aih-row{display:flex;align-items:center;gap:calc(10*var(--u));padding:calc(10*var(--u)) 0;border-bottom:1px solid var(--line);cursor:pointer;}
+  .aihist .aih-row:last-child{border-bottom:none;}
+  .aihist .aih-main{flex:1;min-width:0;}
+  .aihist .aih-tit{font-weight:700;font-size:0.875rem;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .aihist .aih-sub{font-size:0.6875rem;color:var(--muted);margin-top:calc(2*var(--u));}
+  .aihist .aih-prev{display:block;font-size:0.6875rem;color:var(--muted);margin-top:calc(3*var(--u));overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.9;}
+  .aihist .aih-cur{font-size:0.625rem;background:rgba(15,163,122,.12);color:var(--primary);border-radius:999px;padding:0 calc(8*var(--u));font-weight:700;flex:0 0 auto;}
+  .aihist .aih-del{border:none;background:#fdecec;color:#c0392b;border-radius:calc(8*var(--u));padding:calc(5*var(--u)) calc(10*var(--u));font-size:0.75rem;cursor:pointer;flex:0 0 auto;}
+  html.night .aihist .aih-del{background:rgba(224,65,62,.2);color:#ff8a85;}
+  /* 聊天框：高度自适应视口、不挤压输入区 */
+  .chatbox{height:clamp(300px, 52vh, 540px);}
+  .loading{display:flex;align-items:center;gap:calc(10*var(--u));font-size:0.8125rem;color:var(--primary);padding:calc(8*var(--u)) calc(4*var(--u));}
+  .spin{width:calc(18*var(--u));height:calc(18*var(--u));border:calc(3*var(--u)) solid #cfe9e1;border-top-color:var(--primary);border-radius:50%;animation:sp .8s linear infinite;}
+  @keyframes sp{to{transform:rotate(360deg);}}
+
+  /* ===== 多账本（分账本） ===== */
+  .ledgerbar{display:flex;align-items:center;gap:calc(8*var(--u));background:#eef6f2;border:1px solid var(--line);border-radius:calc(12*var(--u));
+    padding:calc(10*var(--u)) calc(14*var(--u));cursor:pointer;margin-bottom:calc(12*var(--u));}
+  html.night .ledgerbar{background:#1f2a26;border-color:#2a3330;}
+  .ledgerbar .ldot{width:calc(14*var(--u));height:calc(14*var(--u));border-radius:50%;flex:0 0 auto;}
+  .ledgerbar .lname{flex:1;font-weight:700;font-size:0.9375rem;color:var(--ink);}
+  .ledgerbar .larr{color:var(--muted);font-size:0.8rem;}
+  .mbtn{display:inline-flex;align-items:center;justify-content:center;gap:calc(4*var(--u));height:calc(34*var(--u));
+    padding:0 calc(14*var(--u));margin-bottom:calc(12*var(--u));border:1px solid var(--primary);border-radius:calc(10*var(--u));
+    background:var(--primary);color:#fff;font-size:0.8125rem;cursor:pointer;}
+  .mbtn:active{filter:brightness(0.94);}
+  html.night .mbtn{color:#fff;}
+  .lheader{display:flex;align-items:center;gap:calc(8*var(--u));margin:calc(4*var(--u)) 0 calc(12*var(--u));}
+  .lheader .ldot{width:calc(14*var(--u));height:calc(14*var(--u));border-radius:50%;flex:0 0 auto;}
+  .lheader .lname{flex:1;font-weight:700;font-size:1.05rem;color:var(--ink);}
+  .lheader .lbtn{border:1px solid var(--primary);background:#fff;color:var(--primary);border-radius:calc(10*var(--u));padding:calc(6*var(--u)) calc(14*var(--u));font-size:0.8125rem;cursor:pointer;}
+  html.night .lheader .lbtn{background:#1f242a;}
+  .lpreset{display:flex;flex-wrap:wrap;gap:calc(8*var(--u));margin:calc(12*var(--u)) 0;}
+  .lpreset button{display:flex;align-items:center;gap:calc(6*var(--u));background:#f3f5f4;border:none;border-radius:999px;
+    padding:calc(8*var(--u)) calc(12*var(--u));font-size:0.8125rem;color:#4a5159;cursor:pointer;}
+  html.night .lpreset button{background:#2a3036;color:#aeb6bd;}
+  .lpreset .ldot{width:calc(10*var(--u));height:calc(10*var(--u));border-radius:50%;}
+  .ledger-list{display:flex;flex-direction:column;gap:calc(10*var(--u));}
+  .ledger-card{display:flex;align-items:center;gap:calc(12*var(--u));background:var(--card);border:1px solid var(--line);border-radius:calc(14*var(--u));padding:calc(12*var(--u)) calc(14*var(--u));}
+  .ledger-card .ldot{width:calc(18*var(--u));height:calc(18*var(--u));border-radius:50%;flex:0 0 auto;}
+  .ledger-card .lc-name{flex:1;font-weight:600;font-size:0.9375rem;color:var(--ink);}
+  .ledger-card .lc-def{flex:0 0 auto;font-size:0.6875rem;color:#0fa37a;background:#e7f6f0;border:1px solid #bfe6d8;border-radius:999px;padding:calc(2*var(--u)) calc(8*var(--u));}
+  html.night .ledger-card .lc-def{color:#7ee0c0;background:#15302a;border-color:#1f4a40;}
+  .ledger-card .lc-actions{display:flex;gap:calc(6*var(--u));}
+  .ledger-card .lc-actions button{border:1px solid var(--line);background:#fff;color:#4a5159;border-radius:calc(8*var(--u));padding:calc(5*var(--u)) calc(10*var(--u));font-size:0.75rem;cursor:pointer;}
+  html.night .ledger-card .lc-actions button{background:#1f242a;}
+  .ledger-card.cur{box-shadow:inset 0 0 0 calc(2*var(--u)) var(--primary);}
+  .lmodal-grid{display:grid;grid-template-columns:1fr 1fr;gap:calc(10*var(--u));margin-bottom:calc(14*var(--u));}
+  .lmodal-card{display:flex;align-items:center;gap:calc(8*var(--u));border:1px solid var(--line);border-radius:calc(12*var(--u));padding:calc(14*var(--u));cursor:pointer;background:#fff;}
+  html.night .lmodal-card{background:#1f242a;}
+  .lmodal-card .ldot{width:calc(16*var(--u));height:calc(16*var(--u));border-radius:50%;flex:0 0 auto;}
+  .lmodal-card .nm{flex:1;font-weight:600;font-size:0.875rem;color:var(--ink);}
+  .lmodal-card .larr{color:var(--primary);}
+  .lmodal-card.cur{border-color:var(--primary);box-shadow:inset 0 0 0 calc(2*var(--u)) var(--primary);}
+  .lmodal-list{display:flex;flex-direction:column;gap:calc(10*var(--u));margin-bottom:calc(14*var(--u));}
+  .lmodal-list .lmodal-card{cursor:default;}
+  .lmodal-list .lc-main{display:flex;align-items:center;gap:calc(8*var(--u));flex:1;cursor:pointer;}
+  .lmodal-list .lc-actions{display:flex;gap:calc(6*var(--u));}
+  .lmodal-list .lc-actions button{border:1px solid var(--line);background:#fff;color:#4a5159;border-radius:calc(8*var(--u));padding:calc(5*var(--u)) calc(10*var(--u));font-size:0.75rem;cursor:pointer;white-space:nowrap;}
+  html.night .lmodal-list .lc-actions button{background:#1f242a;color:#aeb6bd;}
+  .ldchips{display:flex;flex-wrap:wrap;gap:calc(8*var(--u));margin:calc(10*var(--u)) 0 calc(4*var(--u));}
+  .ldchips button{display:flex;align-items:center;gap:calc(6*var(--u));background:#f3f5f4;border:1px solid var(--line);border-radius:999px;
+    padding:calc(8*var(--u)) calc(14*var(--u));font-size:0.8125rem;cursor:pointer;color:#4a5159;}
+  html.night .ldchips button{background:#2a3036;color:#aeb6bd;}
+  .ldchips button .ldot{width:calc(10*var(--u));height:calc(10*var(--u));border-radius:50%;}
+  .ldchips button.on{border-color:var(--primary);color:var(--primary);font-weight:700;background:#fff;}
+  html.night .ldchips button.on{background:#1f242a;}
+  .ldovrow{display:flex;align-items:center;gap:calc(10*var(--u));padding:calc(10*var(--u)) 0;border-bottom:1px solid var(--line);}
+  .ldovrow:last-child{border-bottom:none;}
+  .ldovrow .ldot{width:calc(12*var(--u));height:calc(12*var(--u));border-radius:50%;flex:0 0 auto;}
+  .ldovrow .ov-nm{flex:1;font-weight:600;font-size:0.875rem;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .ldovrow .ov-val{font-size:0.75rem;color:var(--ink);white-space:nowrap;}
+  .ldovrow .ov-val.exp{color:var(--exp);}
+  .ldovrow .ov-val.inc{color:var(--inc);}
+  .ldovrow .ov-val.bal{color:var(--muted);}
+  .ldov-toggle{width:100%;margin-top:calc(8*var(--u));padding:calc(8*var(--u));border:1px dashed var(--line);border-radius:calc(10*var(--u));background:transparent;color:var(--muted);font-size:0.8125rem;font-weight:600;cursor:pointer;transition:.2s;}
+  .ldov-toggle:hover{color:var(--primary);border-color:var(--primary);background:rgba(15,163,122,0.05);}
+  .dzdonuts{display:flex;flex-direction:column;gap:calc(16*var(--u));margin-top:calc(10*var(--u));}
+  .dzdonut .ddttl{font-weight:700;font-size:0.875rem;color:var(--ink);padding-left:calc(8*var(--u));border-left:calc(3*var(--u)) solid var(--primary);margin-bottom:calc(4*var(--u));}
+  .dzdonut .ddcv{width:100%;height:calc(230*var(--u));display:block;}
+  .ai-meta{margin-top:calc(6*var(--u));font-size:0.6875rem;color:var(--muted);text-align:right;}
+  .achv{margin:calc(10*var(--u)) 0 calc(4*var(--u));padding:calc(10*var(--u)) calc(12*var(--u));border-radius:calc(12*var(--u));background:linear-gradient(135deg,rgba(26,158,92,.15),rgba(44,111,214,.12));color:var(--inc);font-weight:800;font-size:0.9375rem;text-align:center;}
+  .swrow{display:flex;flex-wrap:wrap;gap:calc(12*var(--u));margin:calc(8*var(--u)) 0 calc(16*var(--u));}
+  .swrow .sw{width:calc(30*var(--u));height:calc(30*var(--u));border-radius:50%;border:calc(3*var(--u)) solid transparent;cursor:pointer;box-sizing:border-box;}
+  .swrow .sw.on{border-color:#fff;box-shadow:0 0 0 calc(2*var(--u)) var(--ink);}
+
+  /* 弹层（设置 / 日历 / 确认 / 导出）—— 置最高图层，确保始终显示在最上方 */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:9999;padding:calc(14*var(--u));}
+  /* 层级约定：同一时刻可能叠加出现的弹窗，靠 ID 单独提层。
+     - 账单汇总弹窗（expModal）置于最高层，确保从日历里点「导出本月汇总」时不被日历遮罩盖住；
+     - 删除确认框（confModal）提到日历之上，避免确认弹窗被历史日历盖住。 */
+  #confModal{z-index:10000;}
+  #expModal{z-index:10001;}
+  #ledgerEditModal{z-index:10002;}
+  #ncModal{z-index:10003;}
+  .modal.bottom{align-items:flex-end;padding:0;}
+  .sheet{background:var(--card);width:100%;max-width:520px;max-height:90vh;border-radius:calc(20*var(--u));display:flex;flex-direction:column;animation:up .25s ease;}
+  .modal.bottom .sheet{border-radius:calc(20*var(--u)) calc(20*var(--u)) 0 0;max-width:520px;}
+  @keyframes up{from{transform:translateY(40px);opacity:.6}to{transform:none;opacity:1}}
+  .sheet-hd{display:flex;justify-content:space-between;align-items:center;padding:calc(16*var(--u));border-bottom:1px solid var(--line);font-weight:700;font-size:1.0rem;}
+  .sheet-hd button{border:none;background:none;color:var(--primary);font-size:0.9375rem;cursor:pointer;}
+  .sheet-bd{padding:calc(4*var(--u)) calc(16*var(--u)) calc(24*var(--u));overflow-y:auto;}
+  .sblock{padding:calc(14*var(--u)) 0;border-bottom:1px solid var(--line);}
+  .sblock .st{font-size:0.875rem;font-weight:600;margin-bottom:calc(10*var(--u));}
+  .sw{width:calc(34*var(--u));height:calc(34*var(--u));border-radius:50%;border:none;cursor:pointer;box-shadow:0 calc(2*var(--u)) calc(6*var(--u)) rgba(0,0,0,.12);}
+  .sw.on{box-shadow:0 0 0 calc(3*var(--u)) var(--primary);}
+  .slabel{display:flex;justify-content:space-between;align-items:center;margin-bottom:calc(10*var(--u));}
+  .slabel:last-child{margin-bottom:0;}
+  .switch{position:relative;width:calc(48*var(--u));height:calc(28*var(--u));border-radius:999px;background:#d4d8dd;transition:.2s;flex:0 0 auto;cursor:pointer;}
+  html.night .switch{background:#3a4148;}
+  .switch.on{background:var(--primary);}
+  .switch::after{content:'';position:absolute;top:calc(3*var(--u));left:calc(3*var(--u));width:calc(22*var(--u));height:calc(22*var(--u));border-radius:50%;background:#fff;transition:.2s;}
+  .switch.on::after{left:calc(23*var(--u));}
+  .disclaimer{font-size:0.75rem;color:var(--muted);line-height:1.7;}
+
+  /* 确认弹窗按钮 */
+  .confText{font-size:0.9375rem;line-height:1.7;padding:calc(8*var(--u)) 0;color:var(--ink);}
+  .confBtns{display:flex;gap:calc(10*var(--u));margin-top:calc(12*var(--u));}
+  .confBtns button{flex:1;height:calc(44*var(--u));border-radius:calc(10*var(--u));font-size:0.9375rem;font-weight:600;cursor:pointer;border:1px solid var(--line);}
+  .confCancel{background:var(--card);color:var(--muted);}
+  .confOk{background:var(--exp);color:#fff;border-color:transparent;}
+
+  /* 「开启新对话」二次确认弹窗：渐变标题头 + 等宽双键 + 底部安全提示条 */
+  .nc-sheet{max-width:380px;overflow:hidden;}
+  .nc-hd{display:flex;align-items:center;gap:calc(10*var(--u));padding:calc(14*var(--u)) calc(16*var(--u));
+    border-bottom:1px solid var(--line);font-weight:800;font-size:1.0rem;color:var(--ink);
+    background:linear-gradient(90deg,rgba(15,163,122,.14),rgba(15,163,122,0));}
+  .nc-hd .nc-ico{flex:0 0 auto;width:calc(26*var(--u));height:calc(26*var(--u));border-radius:50%;
+    display:inline-flex;align-items:center;justify-content:center;background:var(--primary);color:#fff;font-size:0.8125rem;}
+  .nc-bd{padding:calc(16*var(--u)) calc(16*var(--u)) calc(14*var(--u));}
+  .nc-msg{margin:0;font-size:0.875rem;line-height:1.8;color:var(--ink);}
+  .nc-btns{display:flex;gap:calc(10*var(--u));margin-top:calc(16*var(--u));}
+  .nc-btns button{flex:1;height:calc(44*var(--u));border-radius:calc(12*var(--u));font-size:0.875rem;font-weight:700;cursor:pointer;transition:.12s;}
+  .nc-cancel{border:1.5px solid var(--line);background:var(--card);color:var(--muted);}
+  .nc-cancel:hover{border-color:var(--primary);color:var(--primary);}
+  .nc-ok{border:none;background:linear-gradient(135deg,#12b886,var(--primary));color:#fff;box-shadow:0 calc(4*var(--u)) calc(12*var(--u)) rgba(15,163,122,.28);}
+  .nc-ok:active,.nc-cancel:active{transform:scale(.97);}
+  .nc-ft{background:rgba(127,140,158,.09);border-top:1px solid var(--line);padding:calc(10*var(--u)) calc(16*var(--u));
+    font-size:0.75rem;line-height:1.7;color:var(--muted);}
+
+  /* 导出屏显 */
+  .expText{white-space:pre-wrap;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:0.875rem;line-height:1.8;
+           background:#f6f8f7;border-radius:calc(12*var(--u));padding:calc(14*var(--u));color:var(--ink);max-height:60vh;overflow-y:auto;}
+  html.night .expText{background:rgba(255,255,255,.05);}
+
+  /* 日历 */
+  .cal-hd{display:flex;align-items:center;justify-content:space-between;padding:calc(6*var(--u)) calc(2*var(--u)) calc(10*var(--u));}
+  .cal-hd .mt{font-weight:700;font-size:0.9375rem;}
+  .cal-hd button{border:1px solid var(--line);background:var(--card);color:#4a5159;border-radius:calc(8*var(--u));padding:calc(5*var(--u)) calc(12*var(--u));font-size:0.75rem;cursor:pointer;}
+  html.night .cal-hd button{background:#1f242a;color:#aeb6bd;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:calc(4*var(--u));}
+  .cal-grid .wd{text-align:center;font-size:0.6875rem;color:var(--muted);padding:calc(4*var(--u)) 0;}
+  .cal-cell{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;font-size:0.8125rem;border-radius:calc(8*var(--u));border:none;background:transparent;color:var(--ink);position:relative;cursor:pointer;}
+  .cal-cell.has{background:#eef6f1;color:var(--inc);font-weight:700;}
+  html.night .cal-cell.has{background:rgba(55,200,120,.16);color:var(--inc);}
+  .cal-cell.has::after{content:'';position:absolute;bottom:calc(5*var(--u));width:calc(5*var(--u));height:calc(5*var(--u));border-radius:50%;background:var(--inc);}
+  .cal-cell.sel{outline:calc(2*var(--u)) solid var(--primary);outline-offset:-1px;}
+  .cal-cell.empty{visibility:hidden;}
+  .cal-detail{margin-top:calc(10*var(--u));border-top:1px solid var(--line);padding-top:calc(10*var(--u));}
+  .cal-detail .dh{font-size:0.875rem;font-weight:600;margin-bottom:calc(8*var(--u));}
+  .cal-row{display:flex;align-items:center;gap:calc(8*var(--u));padding:calc(6*var(--u)) 0;border-bottom:1px solid var(--line);font-size:0.8125rem;}
+  .cal-row .cmeta{flex:1;display:flex;flex-direction:column;gap:calc(2*var(--u));min-width:0;}
+  .cal-row .cn{flex:1;}
+  .cal-row .csrc{font-size:0.6875rem;color:var(--muted);}
+  .cal-row .camtInput{width:calc(96*var(--u));}
+  .calDel{border:none;background:#fdecec;color:#c0392b;border-radius:calc(8*var(--u));padding:calc(5*var(--u)) calc(12*var(--u));font-size:0.75rem;cursor:pointer;}
+
+  /* 日历年份/月份选择 + 筛选条 */
+  .cal-hd .cal-ym{display:flex;align-items:center;gap:calc(6*var(--u));}
+  .calsel{height:calc(34*var(--u));border:1px solid var(--line);border-radius:calc(8*var(--u));background:var(--card);color:var(--ink);font-size:0.8125rem;padding:0 calc(8*var(--u));}
+  html.night .calsel{background:#1f242a;}
+  /* 日期显示按钮：看起来像输入框但带 ▾ 箭头，点它打开选择器 */
+  .datebtn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:calc(8*var(--u));
+    border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:calc(10*var(--u));
+    padding:calc(10*var(--u)) calc(12*var(--u));font-size:0.9375rem;font-weight:600;cursor:pointer;text-align:left;}
+  .datebtn::after{content:'▾';color:var(--primary);font-size:0.875rem;font-weight:800;flex:0 0 auto;}
+  html.night .datebtn{background:#1f242a;}
+  /* 年/月按钮：主色描边+浅底+▼，一眼可辨"可点展开"；展开时反色高亮 */
+  .dpym{display:inline-flex;align-items:center;gap:calc(4*var(--u));border:1.5px solid var(--primary);color:var(--primary);
+    background:rgba(15,163,122,0.08);border-radius:calc(10*var(--u));padding:calc(8*var(--u)) calc(16*var(--u));
+    font-size:0.9375rem;font-weight:700;cursor:pointer;transition:transform .12s,box-shadow .12s,background .12s;}
+  .dpym::after{content:'▼';font-size:0.5625rem;opacity:0.85;margin-left:calc(2*var(--u));}
+  .dpym:hover{box-shadow:0 calc(2*var(--u)) calc(8*var(--u)) rgba(15,163,122,0.22);transform:translateY(calc(-1*var(--u)));}
+  .dpym:active{transform:translateY(0);}
+  .dpym.on{background:var(--primary);color:#fff;box-shadow:0 calc(2*var(--u)) calc(10*var(--u)) rgba(15,163,122,0.35);}
+  .dpym.on::after{transform:rotate(180deg);}
+  html.night .dpym{background:rgba(15,163,122,0.18);}
+  html.night .dpym.on{background:var(--primary);color:#fff;}
+  /* 年份/月份展开面板 */
+  .dp-panel{display:grid;grid-template-columns:repeat(3,1fr);gap:calc(8*var(--u));padding:calc(10*var(--u)) 0;}
+  .dp-panel.months{grid-template-columns:repeat(4,1fr);}
+  .dp-panel button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:calc(8*var(--u));
+    padding:calc(8*var(--u)) 0;font-size:0.875rem;font-weight:600;cursor:pointer;}
+  .dp-panel button.on{border-color:var(--primary);background:var(--primary);color:#fff;font-weight:700;}
+  .dp-panel button:disabled{opacity:0.35;cursor:not-allowed;}
+  html.night .dp-panel button{background:#1f242a;}
+  html.night .dp-panel button.on{background:var(--primary);color:#fff;}
+  /* 年份面板翻页条：‹ 选择年份 ›，可跳到任意往年 */
+  .dp-pager{display:flex;align-items:center;justify-content:space-between;grid-column:1/-1;margin-bottom:calc(4*var(--u));}
+  .dp-pager .dp-pgttl{font-size:0.8125rem;color:var(--muted);font-weight:600;}
+  .dp-pager button{width:calc(34*var(--u));height:calc(34*var(--u));border:1px solid var(--line);background:var(--card);
+    color:var(--primary);border-radius:calc(8*var(--u));font-size:1.0625rem;font-weight:800;cursor:pointer;padding:0;}
+  .dp-pager button:disabled{opacity:0.3;cursor:not-allowed;color:var(--muted);}
+  html.night .dp-pager button{background:#1f242a;}
+  .dp-actions{display:flex;justify-content:flex-end;padding-top:calc(10*var(--u));}
+  .dp-today{border:1px solid var(--primary);color:var(--primary);background:transparent;border-radius:calc(8*var(--u));
+    padding:calc(7*var(--u)) calc(14*var(--u));font-size:0.8125rem;font-weight:700;cursor:pointer;}
+  .cal-toolbar{display:flex;align-items:center;gap:calc(8*var(--u));flex-wrap:wrap;margin:calc(8*var(--u)) 0;padding-bottom:calc(10*var(--u));border-bottom:1px solid var(--line);}
+  .cal-toolbar .ctlabel{font-size:0.8125rem;color:var(--muted);}
+  .cal-toolbar .ctbtn{margin-left:auto;border:1px solid var(--primary);background:transparent;color:var(--primary);border-radius:calc(8*var(--u));padding:calc(5*var(--u)) calc(14*var(--u));font-size:0.75rem;white-space:nowrap;cursor:pointer;}
+  html.night .cal-toolbar .ctbtn{background:rgba(255,255,255,.04);}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="t1" data-i="appTitle">钱途记</div>
+    <div class="t2" data-i="appSub">家庭理财 · 三件必备计算</div>
+    <button class="sizebtn" id="setBtn" data-i="btnSet">设置</button>
+  </header>
+
+  <nav class="nav" id="nav">
+    <button class="tab on" data-tab="expense" data-i="tabExpense">点滴账</button>
+    <button class="tab" data-tab="save" data-i="tabSave">攒钱目标</button>
+    <button class="tab" data-tab="ledger" data-i="tabLedger">账本</button>
+    <button class="tab" data-tab="ai" data-i="tabAi">智能问答</button>
+  </nav>
+
+  <main>
+    <!-- 1. 点滴账 -->
+    <section class="panel act" id="p-expense">
+      <div class="card">
+        <div class="ledgerbar" id="dzLedgerBar"><span class="ldot" id="dzLedgerDot"></span><span class="lname" id="dzLedgerName">账本</span><span class="larr">▾</span></div>
+        <button class="mbtn" id="dzCreateLedger" data-i="createLedger">＋ 创建账本</button>
+        <div class="ttl"><span class="bar"></span><span data-i="ledgerTitle">点滴账</span><button class="clr" id="dzClear" data-i="clear">清空</button></div>
+        <div class="hint" data-i="ledgerHint">随手记一笔收入或支出，自动生成开销占比图。数据仅存本机，不上传。</div>
+        <div class="seg" id="dzType">
+          <button data-t="inc" class="on" data-i="incLabel">收入</button>
+          <button data-t="exp" data-i="expLabel">支出</button>
+        </div>
+        <div class="field"><label data-i="lblDate">日期</label><input id="dzDate" type="hidden"><button type="button" class="datebtn" id="dzDateBtn"></button></div>
+        <div class="field"><label data-i="lblCat">分类</label></div>
+        <div class="catwrap" id="dzCatWrap"><div class="catroll" id="dzCatRoll"></div></div>
+        <div class="field"><label data-i="lblSrc">来源/去向</label><input id="dzSrc" type="text" placeholder="如 某APP / 某门店（选填）" list="dzSrcList" autocomplete="off"><datalist id="dzSrcList"></datalist></div>
+        <div class="field"><label data-i="lblAmt">金额</label><input id="dzAmt" type="number" inputmode="decimal" step="0.01" placeholder="0.00"><span class="u" data-i="unit">元</span></div>
+        <button class="addbtn" id="dzAdd" data-i="addExpense">添加到点滴账</button>
+        <button class="addbtn cancel" id="dzEditCancel" style="display:none" data-i="cancelEdit">取消修改</button>
+        <div class="listhdr" id="dzListHdr"></div>
+        <div class="dzlist scroll" id="dzList"></div>
+      </div>
+      <div class="card">
+        <div class="ttl"><span class="bar"></span><span data-i="overviewTitle">本月总览</span></div>
+        <div class="stats">
+          <div class="stat inc"><div class="k" data-i="kInc">本月收入</div><div class="v" id="dzInc">—</div></div>
+          <div class="stat exp"><div class="k" data-i="kExp">本月支出</div><div class="v" id="dzExp">—</div></div>
+          <div class="stat"><div class="k" data-i="kBal">结余</div><div class="v" id="dzBal">—</div></div>
+        </div>
+        <div id="dzBudgetWrap"></div>
+        <div class="dzdonuts">
+          <div class="dzdonut">
+            <div class="ddttl" id="dzDonutExpTtl"></div>
+            <canvas id="dzDonutExp" class="ddcv" height="230" aria-label="支出构成环形图"></canvas>
+            <div class="legend" id="dzLegendExp"></div>
+          </div>
+          <div class="dzdonut">
+            <div class="ddttl" id="dzDonutIncTtl"></div>
+            <canvas id="dzDonutInc" class="ddcv" height="230" aria-label="收入构成环形图"></canvas>
+            <div class="legend" id="dzLegendInc"></div>
+          </div>
+        </div>
+        <div class="tips" id="dzTip"></div>
+        <button class="ghost" id="dzHistoryBtn" data-i="histBtn">查看历史记录（日历）</button>
+      </div>
+    </section>
+
+    <!-- 2. 攒钱小目标 -->
+    <section class="panel" id="p-save">
+      <div class="card">
+        <div class="ttl"><span class="bar"></span><span data-i="saveTitle">攒钱小目标</span><button class="clr" id="saveClear" data-i="clear">清空</button></div>
+        <div class="hint" data-i="saveHint">定个目标，一笔笔存入，进度条会告诉你还差多少。</div>
+        <div id="sTargetBox"></div>
+        <div class="field"><label data-i="lblDate">日期</label><input id="sDate" type="hidden"><button type="button" class="datebtn" id="sDateBtn"></button></div>
+        <div class="field"><label data-i="saveAmt">存入金额</label><input id="sAmt" type="number" inputmode="decimal" step="0.01" placeholder="0.00"><span class="u" data-i="unit">元</span></div>
+        <button class="addbtn" id="depAdd" data-i="addSave">+ 添加一笔存入</button>
+        <button class="addbtn cancel" id="depEditCancel" style="display:none" data-i="cancelEdit">取消修改</button>
+        <div class="listhdr" id="depListHdr" data-i="todayDep">今日存入</div>
+        <div class="dzlist scroll" id="depList"></div>
+      </div>
+      <div class="card">
+        <div class="ttl"><span class="bar"></span><span data-i="progTitle">进度</span></div>
+        <div class="res" id="sRes"></div>
+        <button class="ghost" id="saveHistoryBtn" data-i="histBtn">查看历史记录（日历）</button>
+      </div>
+    </section>
+
+    <!-- 3. 智能问答（聊天式：多轮对话 + 长记忆 + 往期历史） -->
+    <section class="panel" id="p-ai">
+      <div class="card aicard">
+        <div class="ttl"><span class="bar"></span><span data-i="aiTitle">智能问答</span>
+          <span class="aiacts" id="aiActs"></span>
+        </div>
+        <div class="hint" data-i="aiHint">像聊天一样连续提问，AI 记得本会话上下文，并携带往期对话的记忆要点。回答仅供参考。</div>
+        <div class="chatbox" id="chatBox"></div>
+        <div class="chatsugg" id="aiChips">
+          <button>月底总超支怎么办</button>
+          <button>月薪8千怎么存下钱</button>
+          <button>怎么控制冲动消费</button>
+          <button>必要和非必要支出怎么分</button>
+        </div>
+        <div class="chatpill">
+          <textarea id="aiInput" rows="1" placeholder="输入消息，回车发送…"></textarea>
+          <button class="pisend" id="aiSend" type="button" aria-label="发送" title="发送（回车）">➤</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. 账本（汇总查看；创建 / 管理入口在「切换 / 选择账本」弹窗） -->
+    <section class="panel" id="p-ledger">
+      <div class="card">
+        <div class="ttl"><span class="bar"></span><span data-i="ldgSumTitle">账本汇总</span></div>
+        <div class="hint" data-i="ldgSumHint">各账本数据相互独立；此处仅查看汇总，不影响记账。创建、重命名、换色、删除账本请点右上角「切换 / 选择账本」。</div>
+        <div class="lheader">
+          <span class="ldot" id="ledgerCurDot"></span>
+          <span class="lname" id="ledgerCurName">账本</span>
+          <button class="lbtn" id="ledgerSwitchBtn" data-i="switchLedger">切换 / 选择账本 ▾</button>
+        </div>
+        <div class="listhdr" data-i="ldgPick">选择要查看的账本</div>
+        <div class="ldchips" id="ldgChips"></div>
+      </div>
+      <div class="card">
+        <div class="ttl"><span class="bar"></span><span class="ldot" id="ldgViewDot" style="width:calc(12*var(--u));height:calc(12*var(--u));border-radius:50%"></span><span id="ldgViewName">—</span></div>
+        <div class="stats" id="ldgStats"></div>
+        <div class="listhdr" data-i="ldgAllTitle">各账本汇总一览</div>
+        <div id="ldgOverview"></div>
+      </div>
+      <div class="card">
+        <div class="ttl"><span class="bar"></span><span data-i="trendTitle">消费趋势</span></div>
+        <div class="trendctrl">
+          <div class="trow">
+            <span class="tlabel" data-i="selPeriod">时期</span>
+            <select id="ldgYear" class="sel" aria-label="年"></select>
+            <select id="ldgMonth" class="sel" aria-label="月"></select>
+            <select id="ldgDay" class="sel" aria-label="日"></select>
+          </div>
+          <div class="seg tseg" id="ldgKType">
+            <button data-k="inc" data-i="incLabel">收入</button>
+            <button data-k="exp" class="on" data-i="expLabel">支出</button>
+            <button data-k="bal" data-i="kBal">结余</button>
+          </div>
+          <select id="ldgCat" class="sel tcat" aria-label="分类"></select>
+          <div class="seg tseg" id="ldgCType">
+            <button data-c="line" data-i="ctLine">折线图</button>
+            <button data-c="bar" class="on" data-i="ctBar">条形图</button>
+            <button data-c="pie" data-i="ctPie">饼图</button>
+          </div>
+        </div>
+        <canvas id="ldgChart" class="dzchart" width="600" height="220" aria-label="账本趋势图"></canvas>
+        <div class="charttip" id="ldgChartTip" hidden></div>
+        <div class="legend" id="ldgChartLegend"></div>
+        <div class="trendnote" data-i="trendNote">选择年 / 月 / 日查看对应时期的收支趋势：可切换收入 / 支出 / 结余与具体分类，并选择折线 / 条形 / 饼图展示。</div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- 账本：切换 / 管理（重命名、换色、删除均在此弹窗完成） -->
+<div class="modal" id="ledgerModal">
+  <div class="sheet" style="max-width:520px">
+    <div class="sheet-hd"><span data-i="switchLedger">切换账本</span> <button id="ledgerModalClose" data-i="btnClose">关闭</button></div>
+    <div class="sheet-bd">
+      <div class="lmodal-list" id="ledgerModalGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 账本：创建 / 编辑弹窗 -->
+<div class="modal" id="ledgerEditModal">
+  <div class="sheet" style="max-width:460px">
+    <div class="sheet-hd"><span id="ledgerEditTitle" data-i="createLedger">创建账本</span> <button id="ledgerEditClose" data-i="btnClose">关闭</button></div>
+    <div class="sheet-bd">
+      <div class="field" id="ledgerNameRow"><label data-i="ledgerName">账本名称</label><input id="ledgerNameInput" type="text" maxlength="12" placeholder="如 公司专用账本"></div>
+      <div class="field" id="ledgerColorRow" style="display:block"><label data-i="ledgerColor">主题颜色</label><div class="swrow" id="ledgerSwRow"></div></div>
+      <button class="addbtn" id="ledgerSaveBtn" data-i="btnOk">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 设置弹层 -->
+<div class="modal bottom" id="modal">
+  <div class="sheet">
+    <div class="sheet-hd"><span data-i="setTitle">设置</span> <button id="modalClose" data-i="btnClose">关闭</button></div>
+    <div class="sheet-bd">
+      <div class="sblock">
+        <div class="st" data-i="setFont">字体大小（影响整体布局）</div>
+        <div class="srow" id="szRow">
+          <button data-s="1" data-i="std">标准</button><button data-s="1.15" data-i="big">大</button>
+          <button data-s="1.3" data-i="big2">特大</button><button data-s="1.5" data-i="big3">超大</button>
+        </div>
+      </div>
+      <div class="sblock">
+        <div class="st" data-i="setDisplay">显示模式</div>
+        <div class="slabel"><span data-i="setEyecare">护眼模式（暖色柔光，减轻蓝光）</span><div class="switch" id="swEye"></div></div>
+        <div class="slabel"><span data-i="setNight">夜晚模式（深色背景，夜间不刺眼）</span><div class="switch" id="swNight"></div></div>
+      </div>
+      <div class="sblock">
+        <div class="st" data-i="setTheme">主题配色（低饱和）</div>
+        <div class="srow" id="thRow">
+          <div class="sw" data-t="ink"    style="background:#0fa37a"></div>
+          <div class="sw" data-t="slate"  style="background:#3a6ea5"></div>
+          <div class="sw" data-t="sage"   style="background:#5a8a6b"></div>
+          <div class="sw" data-t="mauve"  style="background:#7a6a8a"></div>
+          <div class="sw" data-t="warm"   style="background:#9a7d4a"></div>
+          <div class="sw" data-t="teal"   style="background:#4a8a8a"></div>
+          <div class="sw" data-t="clay"   style="background:#9a5a4a"></div>
+        </div>
+      </div>
+      <div class="sblock">
+        <div class="st" data-i="setPattern">背景花纹</div>
+        <div class="srow" id="patRow">
+          <button data-p="none" data-i="patNone">无</button><button data-p="dots" data-i="patDots">圆点</button>
+          <button data-p="grid" data-i="patGrid">方格</button>
+        </div>
+      </div>
+      <div class="sblock">
+        <div class="st" data-i="setLang">语言（多国）</div>
+        <div class="srow">
+          <select id="langSel" class="calsel" style="flex:1">
+            <option value="zh-CN">简体中文</option>
+            <option value="en">English</option>
+            <option value="ja">日本語</option>
+            <option value="ko">한국어</option>
+            <option value="fr">Français</option>
+            <option value="es">Español</option>
+            <option value="de">Deutsch</option>
+          </select>
+        </div>
+      </div>
+      <div class="sblock">
+        <div class="st" data-i="setDisc">免责声明</div>
+        <div class="disclaimer" data-i="disc">本工具所有数据仅保存在你当前设备本地，不会上传任何服务器。计算结果与建议基于你输入的信息自动生成，仅供个人理财参考，不构成任何专业理财、税务或法律意见。如有重要财务决策，请以实际情况并咨询专业人士为准。</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 智能问答：往期对话历史 -->
+<div class="modal" id="aiHistModal">
+  <div class="sheet" style="max-width:440px">
+    <div class="sheet-hd"><span data-i="aiHistory">往期对话</span> <button id="aiHistClose" data-i="btnClose">关闭</button></div>
+    <div class="sheet-bd">
+      <div class="aihist" id="aiHistList"></div>
+      <button class="ghost" id="aiHistNew" type="button" style="width:100%;margin-top:calc(12*var(--u))">＋ 开始新对话</button>
+    </div>
+  </div>
+</div>
+
+<!-- 删除确认弹窗 -->
+<div class="modal" id="confModal">
+  <div class="sheet" style="max-width:380px">
+    <div class="sheet-hd"><span id="confTitle" data-i="confirmTitle">确认删除</span> <button id="confClose" data-i="btnClose">关闭</button></div>
+    <div class="sheet-bd">
+      <div class="confText" id="confText"></div>
+      <div class="confBtns">
+        <button class="confCancel" id="confCancel" data-i="cancel">取消</button>
+        <button class="confOk" id="confOk" data-i="confirmDel">确定删除</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 开启新对话：二次确认弹窗（防误触） -->
+<div class="modal" id="ncModal">
+  <div class="sheet nc-sheet">
+    <div class="nc-hd"><span class="nc-ico">✚</span><span id="ncTitle" data-i="aiNewAskTitle">开启新对话？</span></div>
+    <div class="nc-bd">
+      <p class="nc-msg" id="ncMsg" data-i="aiNewAskMsg">当前这段对话会完整保存到「往期对话」里，随时可点「往期对话」回看和继续。确定要新建一段对话吗？</p>
+      <div class="nc-btns">
+        <button class="nc-cancel" id="ncCancel" type="button" data-i="cancel">取消</button>
+        <button class="nc-ok" id="ncOk" type="button" data-i="aiNewAskOk">确定新建</button>
+      </div>
+    </div>
+    <div class="nc-ft" id="ncTip" data-i="aiNewAskTip">点「取消」留在当前对话，一条消息都不会丢；当前本来就是空对话时，不会弹窗也不会堆出空白会话。</div>
+  </div>
+</div>
+
+<!-- 导出屏显弹窗 -->
+<div class="modal" id="expModal">
+  <div class="sheet" style="max-width:520px">
+    <div class="sheet-hd"><span data-i="exportTitle">账单汇总</span> <button id="expClose" data-i="btnClose">关闭</button></div>
+    <div class="sheet-bd"><pre class="expText" id="expText"></pre></div>
+  </div>
+</div>
+
+<!-- 日历历史弹层 -->
+<div class="modal bottom" id="calModal">
+  <div class="sheet">
+    <div class="sheet-hd"><span id="calTitle">历史记录</span> <button id="calClose" data-i="btnClose">关闭</button></div>
+    <div class="sheet-bd">
+      <div class="cal-hd">
+        <button id="calPrev" data-i="prevM">上一月</button>
+        <div class="cal-ym">
+          <select id="calYearSel" class="calsel"></select>
+          <select id="calMonthSel" class="calsel"></select>
+        </div>
+        <button id="calNext" data-i="nextM">下一月</button>
+      </div>
+      <div class="cal-toolbar" id="calToolbar">
+        <span class="ctlabel" id="calCatLabel" data-i="catLabel">筛选分类</span>
+        <select id="calCatSel" class="calsel"></select>
+        <button class="ctbtn" id="calExportBtn" data-i="exportBtn">导出本月汇总</button>
+      </div>
+      <div class="cal-grid">
+        <div class="wd">日</div><div class="wd">一</div><div class="wd">二</div><div class="wd">三</div>
+        <div class="wd">四</div><div class="wd">五</div><div class="wd">六</div>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="cal-detail" id="calDetail"><div class="tips">选择一个有记录的日期查看详情。</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- 自定义日期选择器：年/月是明显的可点按钮（带▼、高亮），点击展开年份/月份面板，替代原生日期弹窗 -->
+<div class="modal bottom" id="dpModal">
+  <div class="sheet">
+    <div class="sheet-hd"><span data-i="dpTitle">选择日期</span> <button id="dpClose" data-i="btnClose">关闭</button></div>
+    <div class="sheet-bd">
+      <div class="cal-hd">
+        <button id="dpPrev" data-i="prevM">上一月</button>
+        <div class="cal-ym">
+          <button type="button" class="dpym" id="dpYearBtn">2026年</button>
+          <button type="button" class="dpym" id="dpMonthBtn">9月</button>
+        </div>
+        <button id="dpNext" data-i="nextM">下一月</button>
+      </div>
+      <div class="dp-panel" id="dpYearGrid" style="display:none"></div>
+      <div class="dp-panel months" id="dpMonthGrid" style="display:none"></div>
+      <div class="cal-grid">
+        <div class="wd">日</div><div class="wd">一</div><div class="wd">二</div><div class="wd">三</div>
+        <div class="wd">四</div><div class="wd">五</div><div class="wd">六</div>
+      </div>
+      <div class="cal-grid" id="dpGrid"></div>
+      <div class="dp-actions"><button class="dp-today" id="dpToday" data-i="dpToday">回到今天</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============ 通用工具 ============ */
+const $ = id => document.getElementById(id);
+const num = id => { const v = parseFloat($(id).value); return isFinite(v) && v >= 0 ? v : NaN; };
+/* 金额：保留小数点后 2 位，不截断为整数（toLocaleString 仅精确到分，不整体四舍五入） */
+const fmt = n => { n = Number(n)||0; const neg = n<0; n=Math.abs(n);
+  const s = n.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2});
+  return (neg?'-':'')+'¥'+s; };
+const pct = n => isFinite(n) ? (n * 100).toFixed(0) + '%' : '—';
+/* 金额精度：统一保留小数点后 2 位（分），不超出、不产生更多小数；所有金额入库前都经此处理。
+   加 1e-9 避免经典浮点误差（如 2.675*100=267.4999… 误舍为 2.67），按四舍五入到分处理 */
+const round2 = n => { n = Number(n); const s = n < 0 ? -1 : 1; return Math.round((Math.abs(isFinite(n) ? n : 0) + 1e-9) * 100) / 100 * s; };
+/* 输入时实时裁剪：一旦小数位超过 2 位即刻舍入，用户无法“设置”出超过两位小数的金额 */
+function clip2(el){
+  const v=el.value; if(v===''||v==null) return;
+  const dot=v.indexOf('.');
+  if(dot>=0 && v.length-dot-1>2){ const r=round2(parseFloat(v)); if(isFinite(r)) el.value=r; }
+}
+const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const lsGet = (k,d) => { try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } };
+const lsSet = (k,v) => { try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} };
+function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function curMonth(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+/* 日期约束：不允许设置超过今天的日期；若用户选了未来日期，弹提醒并纠正回今天 */
+function enforcePastDate(input){
+  input.setAttribute('max', todayStr());                 // 日期选择器层面禁止选未来
+  const fix=()=>{
+    const v=input.value;
+    if(v && v > todayStr()){                              // 仍可能被手动输入绕过，再次拦截
+      toast('日期不能晚于今天，最多只能选到今天');
+      input.value=todayStr();
+      input.dispatchEvent(new Event('input',{bubbles:true}));
+    }
+  };
+  input.addEventListener('change', fix);
+}
+function toast(m){ const t=document.createElement('div'); t.textContent=m;
+  t.style.cssText='position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:rgba(31,41,51,.92);color:#fff;padding:8px 16px;border-radius:999px;font-size:0.8125rem;z-index:99;transition:.3s;';
+  document.body.appendChild(t); setTimeout(()=>t.style.opacity='0',1200); setTimeout(()=>t.remove(),1600); }
+
+/* ============ 多语言 ============ */
+const I18N={
+  'zh-CN':{appTitle:'钱途记',appSub:'家庭理财 · 三件必备计算',tabExpense:'点滴账',tabSave:'攒钱目标',tabAi:'智能问答',
+    btnSet:'设置',btnClose:'关闭',btnSend:'发送提问',btnNew:'新对话',btnOk:'确定',cancel:'取消',confirmDel:'确定删除',confirmTitle:'确认删除',
+    ledgerTitle:'点滴账',ledgerHint:'随手记一笔收入或支出，自动生成开销占比图。数据仅存本机，不上传。',incLabel:'收入',expLabel:'支出',
+    lblDate:'日期',lblCat:'分类',lblSrc:'来源/去向',lblAmt:'金额',unit:'元',addExpense:'添加到点滴账',saveEdit:'保存修改',cancelEdit:'取消修改',overviewTitle:'本月总览',kInc:'本月收入',kExp:'本月支出',kBal:'结余',
+    histBtn:'查看历史记录（日历）',clear:'清空',saveTitle:'攒钱小目标',saveHint:'定个目标，一笔笔存入，进度条会告诉你还差多少。',
+    lblTarget:'目标金额',saveAmt:'存入金额',addSave:'+ 添加一笔存入',todayDep:'今日存入',progTitle:'进度',
+    aiTitle:'智能问答',aiHint:'用自然语言提问，AI 给出理财、节流、攒钱方面的建议。回答仅供参考，请结合自身情况判断。',
+    setFont:'字体大小（影响整体布局）',std:'标准',big:'大',big2:'特大',big3:'超大',setDisplay:'显示模式',
+    setEyecare:'护眼模式（暖色柔光，减轻蓝光）',setNight:'夜晚模式（深色背景，夜间不刺眼）',setTheme:'主题配色（低饱和）',
+    setPattern:'背景花纹',patNone:'无',patDots:'圆点',patGrid:'方格',setLang:'语言（多国）',setDisc:'免责声明',
+    prevM:'上一月',nextM:'下一月',catLabel:'筛选分类',allCat:'全部分类',exportBtn:'导出本月汇总',exportTitle:'账单汇总',
+    budgetSet:'设置本月总预算',budgetEdit:'修改预算',budgetClear:'清除预算',monthOver:'本月已花',monthBudget:'总预算',overBud:'已超支',
+    calDz:'点滴账历史记录',calSave:'攒钱历史记录',delDay:'删除当天全部记录',noRec:'这一天没有记录。',pickDay:'选择一个有记录的日期查看详情。',dpTitle:'选择日期',dpToday:'回到今天',
+    incLabel2:'收入',expLabel2:'支出',saveWord:'存入',aiNewAskTitle:'开启新对话？',aiNewAskMsg:'当前这段对话会完整保存到「往期对话」里，随时可点「往期对话」回看和继续。确定要新建一段对话吗？',aiNewAskOk:'确定新建',aiNewAskTip:'点「取消」留在当前对话，一条消息都不会丢；当前本来就是空对话时，不会弹窗也不会堆出空白会话。',aiNewNowEmpty:'当前已经是新对话',aiNewDone:'已开启新对话',aiHistEmpty:'还没有往期对话，发一条消息就会自动保存。',aihCur:'当前',aiSet:'AI 设置（密钥 / 模型）',aiKeyHint:'内置密钥已生效，通常无需修改；如需更换请在下方填写并保存，只保存在本机。',aiModelHint:'默认使用内置模型；如需更换请在下方填写模型名并保存。',aiHistory:'往期对话',aiPlaceholder:'输入消息，回车发送…',aiEmptyTip:'问问任何理财问题：预算、攒钱、砍开支、装修控预算…\nAI 会记住本次对话上下文，并带着往期对话的记忆。',aiModel:'AI 模型',aiModelHint:'留空用内置模型；不确定名字时可先查询该密钥可用的模型清单。',aiKey:'AI 密钥（智能问答）',aiKeyHint:'留空则使用内置密钥；密钥只保存在本机，请勿与他人分享此文件。',discText:'本工具所有数据仅保存在你当前设备本地，不会上传任何服务器。计算结果与建议基于你输入的信息自动生成，仅供个人理财参考，不构成任何专业理财、税务或法律意见。如有重要财务决策，请以实际情况并咨询专业人士为准。',
+    tabLedger:'账本',ledgerMgmt:'账本',ledgerMgmtHint:'不同账本数据完全隔离；切换账本后，记账、账单与统计只显示该账本的收支，绝不混入其他账本。',switchLedger:'切换 / 选择账本',createLedger:'＋ 创建账本',ledgerName:'账本名称',ledgerColor:'主题颜色',rename:'重命名',changeColor:'换色',delete:'删除',ledgerListTitle:'我的账本',editLedger:'编辑账本',presetLedger:'专用账本模板',ledgerDefault:'默认',ledgerDefaultKeep:'默认账本不可删除',trendTitle:'消费趋势',selPeriod:'时期',allYear:'全部年份',allMonth:'全部月份',allDay:'全部日期',ctLine:'折线图',ctBar:'条形图',ctPie:'饼图',chartType:'图表',chartEmpty:'暂无符合条件的记录',trendNote:'选择年 / 月 / 日查看对应时期的收支趋势：可切换收入 / 支出 / 结余与具体分类，并选择折线 / 条形 / 饼图展示。',ldgSumTitle:'账本汇总',ldgSumHint:'各账本数据相互独立；此处仅查看汇总，不影响记账。创建、重命名、换色、删除账本请点右上角「切换 / 选择账本」。',ldgPick:'选择要查看的账本',ldgAllTitle:'各账本汇总一览',ldgTotalInc:'累计收入',ldgTotalExp:'累计支出',ldgTotalBal:'累计结余',catPhase:'各阶段占比',expComp:'支出构成',incComp:'收入构成',expandAll:'展开全部',foldUp:'收起',setTargetBtn:'设置目标金额',targetModify:'修改目标',targetDel:'删除目标',achievedTitle:'已达成目标',nextRound:'开启下一轮攒钱',notNow:'暂不',roundHist:'攒钱历史轮次',noTargetTip:'未设置目标也可以直接存入；设置目标后可看进度。',targetNeed:'请输入有效的目标金额',targetSetOk:'目标金额已设置',targetDelOk:'目标已删除'},
+  'en':{appTitle:'SavePal',appSub:'Family finance · 3 essential tools',tabExpense:'Ledger',tabSave:'Savings',tabAi:'Ask AI',
+    btnSet:'Settings',btnClose:'Close',btnSend:'Send',btnNew:'New',cancel:'Cancel',confirmDel:'Delete',confirmTitle:'Confirm Delete',
+    ledgerTitle:'Ledger',ledgerHint:'Quickly log income or expense; auto-build a spending breakdown. Data stays on this device only.',incLabel:'Income',expLabel:'Expense',
+    lblDate:'Date',lblCat:'Category',lblSrc:'Source',lblAmt:'Amount',unit:'',addExpense:'Add to ledger',saveEdit:'Save changes',cancelEdit:'Cancel edit',overviewTitle:'This Month',kInc:'Income',kExp:'Expense',kBal:'Balance',
+    histBtn:'View history (calendar)',clear:'Clear',saveTitle:'Savings Goal',saveHint:'Set a goal, save bit by bit; the bar shows how much is left.',
+    lblTarget:'Target',saveAmt:'Deposit',addSave:'+ Add deposit',todayDep:"Today's deposits",progTitle:'Progress',
+    aiTitle:'Ask AI',aiHint:'Ask in plain language; AI gives budgeting, saving and spending advice. For reference only.',
+    setFont:'Font size (affects layout)',std:'S',big:'L',big2:'XL',big3:'XXL',setDisplay:'Display mode',
+    setEyecare:'Eye-care (warm light, less blue)',setNight:'Night (dark, easy on eyes)',setTheme:'Theme (low-saturation)',
+    setPattern:'Background pattern',patNone:'None',patDots:'Dots',patGrid:'Grid',setLang:'Language',setDisc:'Disclaimer',
+    prevM:'Prev',nextM:'Next',catLabel:'Filter category',allCat:'All categories',exportBtn:'Export summary',exportTitle:'Bill Summary',
+    budgetSet:'Set monthly budget',budgetEdit:'Edit budget',budgetClear:'Clear budget',monthOver:'Spent',monthBudget:'Budget',overBud:'over budget',
+    calDz:'Ledger history',calSave:'Savings history',delDay:'Delete all records of this day',noRec:'No records on this day.',pickDay:'Pick a day with records to view details.',dpTitle:'Pick a date',dpToday:'Back to today',
+    incLabel2:'Income',expLabel2:'Expense',saveWord:'Deposit',aiNewAskTitle:'Start a new chat?',aiNewAskMsg:'This conversation will be saved to “Past chats” and you can open it again anytime. Continue?',aiNewAskOk:'New chat',aiNewAskTip:'Choosing Cancel keeps you in the current chat, nothing is lost. If it is already empty, nothing new is created.',aiNewNowEmpty:'Already a new chat',aiNewDone:'New chat started',aiHistEmpty:'No past chats yet — send a message and it will be saved automatically.',aihCur:'Current',aiSet:'AI settings (key / model)',aiKeyHint:'The built-in key works out of the box. To replace it, enter a new key and save; it stays on this device.',aiModelHint:'The built-in model is used by default; enter a model name and save to change.',aiHistory:'Past chats',aiPlaceholder:'Type a message…',aiEmptyTip:'Ask anything about budgeting, saving or cutting costs…\nAI remembers this chat and carries memory from past chats.',aiModel:'AI model',aiModelHint:'Leave empty to use the built-in model; query the list if unsure.',aiKey:'AI key (Ask AI)',aiKeyHint:'Leave empty to use the built-in key; your key stays on this device — do not share this file.',discText:'All data is stored only on your device and never uploaded. Results and advice are generated from your input for personal reference only, not professional financial, tax or legal advice.',
+    tabLedger:'Ledgers',ledgerMgmt:'Ledgers',ledgerMgmtHint:'Ledgers are fully isolated. Switching shows only the selected ledger’s income/expense.',switchLedger:'Switch ledger',createLedger:'+ New ledger',ledgerName:'Ledger name',ledgerColor:'Theme color',rename:'Rename',changeColor:'Color',delete:'Delete',ledgerListTitle:'My ledgers',editLedger:'Edit ledger',presetLedger:'Templates',ledgerDefault:'Default',ledgerDefaultKeep:'Default ledger cannot be deleted',trendTitle:'Spending trends',selPeriod:'Period',allYear:'All years',allMonth:'All months',allDay:'All days',ctLine:'Line',ctBar:'Bar',ctPie:'Pie',chartType:'Chart',chartEmpty:'No matching records',trendNote:'Pick a year/month/day to view trends. Switch income/expense/balance and a category, and choose line/bar/pie.',ldgSumTitle:'Ledger summary',ldgSumHint:'Each ledger is fully isolated; this page is view-only. Create/rename/recolor/delete ledgers via "Switch / select ledger".',ldgPick:'Pick a ledger to inspect',ldgAllTitle:'All ledgers at a glance',ldgTotalInc:'Total income',ldgTotalExp:'Total expense',ldgTotalBal:'Total balance',catPhase:'by phase',expComp:'Expense breakdown',incComp:'Income breakdown',expandAll:'Show all',foldUp:'Collapse',setTargetBtn:'Set target amount',targetModify:'Edit target',targetDel:'Delete target',achievedTitle:'Goal achieved',nextRound:'Start next round',notNow:'Not now',roundHist:'Past rounds',noTargetTip:'You can deposit without a target; set one to see progress.',targetNeed:'Enter a valid target amount',targetSetOk:'Target saved',targetDelOk:'Target removed'},
+  'ja':{appTitle:'節約計算機',appSub:'家計 · 3つの必須ツール',tabExpense:'家計簿',tabSave:'貯金目標',tabAi:'AI質問',
+    btnSet:'設定',btnClose:'閉じる',btnSend:'送信',btnNew:'新規',cancel:'キャンセル',confirmDel:'削除',confirmTitle:'削除確認',
+    ledgerTitle:'家計簿',ledgerHint:'収入や支出をさっと記録し、自動で内訳グラフを作成。データは端末内のみに保存。',incLabel:'収入',expLabel:'支出',
+    lblDate:'日付',lblCat:'分類',lblSrc:'出所／行き先',lblAmt:'金額',unit:'円',addExpense:'家計簿に追加',saveEdit:'変更を保存',cancelEdit:'編集を取消',overviewTitle:'今月の概要',kInc:'収入',kExp:'支出',kBal:'残高',
+    histBtn:'履歴を見る（カレンダー）',clear:'クリア',saveTitle:'貯金目標',saveHint:'目標を決めて少しずつ貯金。バーが残りを表示。',
+    lblTarget:'目標額',saveAmt:'預入額',addSave:'+ 預入を追加',todayDep:'今日の預入',progTitle:'進捗',
+    aiTitle:'AI質問',aiHint:'普通の言葉で質問すると、予算や節約のアドバイスを表示。参考程度に。',
+    setFont:'文字サイズ（レイアウトに影響）',std:'標準',big:'大',big2:'特大',big3:'超特大',setDisplay:'表示モード',
+    setEyecare:'目保護（暖色・ブルーライト軽減）',setNight:'夜間（暗背景）',setTheme:'テーマ（低彩度）',
+    setPattern:'背景模様',patNone:'なし',patDots:'ドット',patGrid:'グリッド',setLang:'言語',setDisc:'免責事項',
+    prevM:'前月',nextM:'翌月',catLabel:'分類で絞り込み',allCat:'すべての分類',exportBtn:'月次サマリー出力',exportTitle:'請求サマリー',
+    budgetSet:'月予算を設定',budgetEdit:'予算を編集',budgetClear:'予算をクリア',monthOver:'使用額',monthBudget:'予算',overBud:'予算超過',
+    calDz:'家計簿履歴',calSave:'貯金履歴',delDay:'この日の記録をすべて削除',noRec:'この日の記録はありません。',pickDay:'記録のある日を選んで詳細を表示。',dpTitle:'日付を選択',dpToday:'今日に戻る',
+    incLabel2:'収入',expLabel2:'支出',saveWord:'預入',aiNewAskTitle:'新しい対話を開始しますか？',aiNewAskMsg:'現在の対話は「過去のやり取り」に保存され、いつでも閲覧・再開できます。',aiNewAskOk:'新規作成',aiNewAskTip:'「キャンセル」を押すと現在の会話にそのまま残り、メッセージは失われません。すでに空の会話の場合は新しく作成されません。',aiNewNowEmpty:'すでに新しい対話です',aiNewDone:'新しい対話を開始しました',aiHistEmpty:'まだ過去のやり取りはありません。メッセージを送信すると自動保存されます。',aihCur:'現在',aiSet:'AI 設定（キー / モデル）',aiKeyHint:'内蔵キーで動作します。変更する場合のみ入力して保存。端末内のみに保存。',aiModelHint:'既定では内蔵モデル。変更時はモデル名を入力して保存。',aiHistory:'過去のやり取り',aiPlaceholder:'メッセージを入力…',aiEmptyTip:'予算・貯金・支出について何でも質問できます。',aiModel:'AI モデル',aiModelHint:'空欄なら内蔵モデル。分からなければ一覧を照会してください。',aiKey:'AI キー（AI質問）',aiKeyHint:'空欄なら内蔵キーを使用。キーは端末内のみに保存されます。このファイルを共有しないでください。',discText:'すべてのデータはお使いの端末内のみに保存され、アップロードされません。結果とアドバイスは個人の参考用であり、専門的な助言ではありません。',ledgerDefault:'既定',ledgerDefaultKeep:'既定の帳簿は削除できません',trendTitle:'収支の推移',selPeriod:'期間',allYear:'全期間',allMonth:'全月',allDay:'全日',ctLine:'折れ線',ctBar:'棒',ctPie:'円',chartType:'グラフ',chartEmpty:'該当する記録がありません',trendNote:'年/月/日を選んで傾向を表示。収入/支出/残高と分類を切替え、折れ線/棒/円から選択。',ldgSumTitle:'帳簿サマリー',ldgSumHint:'各帳簿のデータは完全に独立。このページは閲覧専用。作成・改名・色変更・削除は「切替 / 帳簿選択」から。',ldgPick:'閲覧する帳簿を選択',ldgAllTitle:'各帳簿の一覧',ldgTotalInc:'累計収入',ldgTotalExp:'累計支出',ldgTotalBal:'累計残高',catPhase:'時期別',expComp:'支出内訳',incComp:'収入内訳',expandAll:'すべて表示',foldUp:'折りたたむ',setTargetBtn:'目標額を設定',targetModify:'目標を変更',targetDel:'目標を削除',achievedTitle:'目標達成',nextRound:'次のラウンドを開始',notNow:'後で',roundHist:'過去のラウンド',noTargetTip:'目標がなくても預入できます。設定すると進捗が見られます。',targetNeed:'有効な目標額を入力してください',targetSetOk:'目標を設定しました',targetDelOk:'目標を削除しました'},
+  'ko':{appTitle:'절약 계산기',appSub:'가계 · 필수 도구 3가지',tabExpense:'가계부',tabSave:'저축 목표',tabAi:'AI 질문',
+    btnSet:'설정',btnClose:'닫기',btnSend:'보내기',btnNew:'새로',cancel:'취소',confirmDel:'삭제',confirmTitle:'삭제 확인',
+    ledgerTitle:'가계부',ledgerHint:'수입·지출을 기록하면 자동으로 내역 그래프가 만들어집니다. 데이터는 기기에만 저장됩니다.',incLabel:'수입',expLabel:'지출',
+    lblDate:'날짜',lblCat:'분류',lblSrc:'출처/대상',lblAmt:'금액',unit:'원',addExpense:'가계부에 추가',saveEdit:'수정 저장',cancelEdit:'수정 취소',overviewTitle:'이번 달',kInc:'수입',kExp:'지출',kBal:'잔액',
+    histBtn:'기록 보기(달력)',clear:'지우기',saveTitle:'저축 목표',saveHint:'목표를 정하고 조금씩 모으면 막대가 남은 금액을 알려줍니다.',
+    lblTarget:'목표액',saveAmt:'입금액',addSave:'+ 입금 추가',todayDep:'오늘 입금',progTitle:'진행률',
+    aiTitle:'AI 질문',aiHint:'일반적인 말로 질문하면 예산·저축 조언을 보여줍니다. 참고용입니다.',
+    setFont:'글자 크기(레이아웃에 영향)',std:'표준',big:'크게',big2:'특대',big3:'초특대',setDisplay:'표시 모드',
+    setEyecare:'눈보호(따뜻한 빛, 블루라이트 완화)',setNight:'야간(어두운 배경)',setTheme:'테마(저채도)',
+    setPattern:'배경 무늬',patNone:'없음',patDots:'점',patGrid:'격자',setLang:'언어',setDisc:'면책 조항',
+    prevM:'이전',nextM:'다음',catLabel:'분류 필터',allCat:'전체 분류',exportBtn:'월간 요약 내보내기',exportTitle:'청구 요약',
+    budgetSet:'월 예산 설정',budgetEdit:'예산 편집',budgetClear:'예산 지우기',monthOver:'사용액',monthBudget:'예산',overBud:'예산 초과',
+    calDz:'가계부 기록',calSave:'저축 기록',delDay:'이 날 기록 모두 삭제',noRec:'이 날 기록이 없습니다.',pickDay:'기록이 있는 날을 선택하세요.',dpTitle:'날짜 선택',dpToday:'오늘로 돌아가기',
+    incLabel2:'수입',expLabel2:'지출',saveWord:'입금',aiNewAskTitle:'새 대화를 시작할까요?',aiNewAskMsg:'현재 대화는 「이전 대화」에 저장되며 언제든 다시 볼 수 있습니다.',aiNewAskOk:'새로 만들기',aiNewAskTip:'「취소」를 누르면 현재 대화에 그대로 남고 메시지도 사라지지 않습니다. 이미 빈 대화라면 새로 만들지 않습니다.',aiNewNowEmpty:'이미 새 대화입니다',aiNewDone:'새 대화를 시작했습니다',aiHistEmpty:'아직 이전 대화가 없습니다. 메시지를 보내면 자동 저장됩니다.',aihCur:'현재',aiSet:'AI 설정(키 / 모델)',aiKeyHint:'기본 키가 적용되어 있습니다. 변경 시에만 입력해 저장하세요. 이 기기에만 저장됩니다.',aiModelHint:'기본 모델이 적용되어 있습니다. 변경 시 모델명을 입력해 저장하세요.',aiHistory:'이전 대화',aiPlaceholder:'메시지 입력…',aiEmptyTip:'예산·저축·지출에 대해 무엇이든 물어보세요.',aiModel:'AI 모델',aiModelHint:'비우면 기본 모델 사용. 모르면 목록을 조회하세요.',aiKey:'AI 키(AI 질문)',aiKeyHint:'비우면 기본 키를 사용합니다. 키는 이 기기에만 저장되니 파일을 공유하지 마세요.',discText:'모든 데이터는 기기에만 저장되며 업로드되지 않습니다. 결과와 조언은 개인 참고용이며 전문적인 조언이 아닙니다.',ledgerDefault:'기본',ledgerDefaultKeep:'기본 장부는 삭제할 수 없습니다',trendTitle:'수입/지출 추이',selPeriod:'기간',allYear:'전체 연도',allMonth:'전체 월',allDay:'전체 일',ctLine:'꺾은선',ctBar:'막대',ctPie:'원',chartType:'그래프',chartEmpty:'해당 기록 없음',trendNote:'연/월/일을 골라 추이 표시. 수입/지출/잔액과 분류 전환 후 꺾은선/막대/원 선택.',ldgSumTitle:'장부 요약',ldgSumHint:'각 장부의 데이터는 완전히 독립. 이 페이지는 조회 전용. 생성·이름변경·색변경·삭제는 "장부 전환"에서.',ldgPick:'볼 장부 선택',ldgAllTitle:'장부별 요약',ldgTotalInc:'누적 수입',ldgTotalExp:'누적 지출',ldgTotalBal:'누적 잔액',catPhase:'기간별',expComp:'지출 구성',incComp:'수입 구성',expandAll:'모두 표시',foldUp:'접기',setTargetBtn:'목표 금액 설정',targetModify:'목표 수정',targetDel:'목표 삭제',achievedTitle:'목표 달성',nextRound:'다음 라운드 시작',notNow:'나중에',roundHist:'이전 라운드',noTargetTip:'목표 없이도 입금할 수 있습니다. 설정하면 진행률이 표시됩니다.',targetNeed:'유효한 목표 금액을 입력하세요',targetSetOk:'목표가 설정되었습니다',targetDelOk:'목표가 삭제되었습니다'},
+  'fr':{appTitle:'Économiseur',appSub:'Finance perso · 3 outils',tabExpense:'Cahier',tabSave:'Épargne',tabAi:'Poser une question',
+    btnSet:'Réglages',btnClose:'Fermer',btnSend:'Envoyer',btnNew:'Nouveau',cancel:'Annuler',confirmDel:'Supprimer',confirmTitle:'Confirmer',
+    ledgerTitle:'Cahier',ledgerHint:'Notez revenu ou dépense ; un graphique se crée automatiquement. Données sur l’appareil uniquement.',incLabel:'Revenu',expLabel:'Dépense',
+    lblDate:'Date',lblCat:'Catégorie',lblSrc:'Source',lblAmt:'Montant',unit:'',addExpense:'Ajouter au cahier',saveEdit:'Enregistrer',cancelEdit:'Annuler',overviewTitle:'Ce mois',kInc:'Revenu',kExp:'Dépense',kBal:'Solde',
+    histBtn:'Historique (calendrier)',clear:'Effacer',saveTitle:'Objectif épargne',saveHint:'Fixez une cible, épargnez peu à peu ; la barre montre le reste.',
+    lblTarget:'Cible',saveAmt:'Dépôt',addSave:'+ Ajouter dépôt',todayDep:'Dépôts du jour',progTitle:'Progression',
+    aiTitle:'Poser une question',aiHint:'Posez en langage clair ; l’IA donne des conseils. À titre indicatif.',
+    setFont:'Taille police (impacte mise en page)',std:'S',big:'L',big2:'XL',big3:'XXL',setDisplay:'Mode affichage',
+    setEyecare:'Œil (lumière chaude, moins bleu)',setNight:'Nuit (fond sombre)',setTheme:'Thème (désaturé)',
+    setPattern:'Motif de fond',patNone:'Aucun',patDots:'Points',patGrid:'Grille',setLang:'Langue',setDisc:'Avertissement',
+    prevM:'Préc',nextM:'Suiv',catLabel:'Filtrer catégorie',allCat:'Toutes catégories',exportBtn:'Exporter résumé',exportTitle:'Résumé',
+    budgetSet:'Budget mensuel',budgetEdit:'Modifier budget',budgetClear:'Effacer budget',monthOver:'Dépensé',monthBudget:'Budget',overBud:'dépassement',
+    calDz:'Historique cahier',calSave:'Historique épargne',delDay:'Supprimer tout ce jour',noRec:'Aucun enregistrement ce jour.',pickDay:'Choisissez un jour avec enregistrements.',dpTitle:'Choisir une date',dpToday:"Retour à aujourd'hui",
+    incLabel2:'Revenu',expLabel2:'Dépense',saveWord:'Dépôt',aiNewAskTitle:'Nouvelle discussion ?',aiNewAskMsg:'La conversation sera enregistrée dans « Discussions » et restera consultable.',aiNewAskOk:'Créer',aiNewAskTip:'En annulant, vous restez dans la conversation actuelle : rien ne sera perdu. Si elle est deja vide, aucune conversation ne sera creee.',aiNewNowEmpty:'Discussion déjà vide',aiNewDone:'Nouvelle discussion créée',aiHistEmpty:'Aucune discussion passée ; envoyez un message pour l’enregistrer.',aihCur:'Actuelle',aiSet:'Réglages IA (clé / modèle)',aiKeyHint:'La clé intégrée fonctionne déjà ; pour la remplacer, saisissez-en une et enregistrez (reste sur l’appareil).',aiModelHint:'Le modèle intégré est utilisé par défaut ; saisissez un nom et enregistrez pour changer.',aiHistory:'Discussions',aiPlaceholder:'Tapez un message…',aiEmptyTip:'Budget, épargne, dépenses… posez vos questions.',aiModel:'Modèle IA',aiModelHint:'Vide = modèle intégré ; consultez la liste si besoin.',aiKey:'Clé IA (Poser une question)',aiKeyHint:'Laissez vide pour utiliser la clé intégrée ; ne partagez pas ce fichier.',discText:'Toutes les données restent sur votre appareil et ne sont jamais envoyées. Résultats et conseils à titre indicatif, pas un avis professionnel.',ledgerDefault:'Défaut',ledgerDefaultKeep:'Le carnet par défaut ne peut pas être supprimé',trendTitle:'Tendance',selPeriod:'Période',allYear:'Toutes années',allMonth:'Tous mois',allDay:'Tous jours',ctLine:'Ligne',ctBar:'Barres',ctPie:'Secteur',chartType:'Graphique',chartEmpty:'Aucun résultat',trendNote:'Choisissez année/mois/jour pour voir la tendance. Revenu/dépense/solde et catégorie, puis ligne/barres/secteur.',ldgSumTitle:'Résumé des carnets',ldgSumHint:'Les données de chaque carnet sont isolées ; cette page est en lecture seule. Créer/renommer/recolorer/supprimer via « Changer / choisir un carnet ».',ldgPick:'Choisir un carnet',ldgAllTitle:'Aperçu de tous les carnets',ldgTotalInc:'Revenu total',ldgTotalExp:'Dépense totale',ldgTotalBal:'Solde total',catPhase:'par période',expComp:'Composition des dépenses',incComp:'Composition des revenus',expandAll:'Tout afficher',foldUp:'Réduire',setTargetBtn:'Définir l’objectif',targetModify:'Modifier l’objectif',targetDel:'Supprimer l’objectif',achievedTitle:'Objectif atteint',nextRound:'Tour suivant',notNow:'Plus tard',roundHist:'Tours précédents',noTargetTip:'Dépôts possibles sans objectif ; définissez-en un pour voir la progression.',targetNeed:'Saisissez un objectif valide',targetSetOk:'Objectif enregistré',targetDelOk:'Objectif supprimé'},
+  'es':{appTitle:'Ahorrador',appSub:'Finanzas · 3 herramientas',tabExpense:'Libreta',tabSave:'Ahorro',tabAi:'Preguntar',
+    btnSet:'Ajustes',btnClose:'Cerrar',btnSend:'Enviar',btnNew:'Nuevo',cancel:'Cancelar',confirmDel:'Eliminar',confirmTitle:'Confirmar',
+    ledgerTitle:'Libreta',ledgerHint:'Anota ingreso o gasto; el gráfico se crea solo. Datos solo en el dispositivo.',incLabel:'Ingreso',expLabel:'Gasto',
+    lblDate:'Fecha',lblCat:'Categoría',lblSrc:'Origen',lblAmt:'Monto',unit:'',addExpense:'Añadir a libreta',saveEdit:'Guardar',cancelEdit:'Cancelar',overviewTitle:'Este mes',kInc:'Ingreso',kExp:'Gasto',kBal:'Saldo',
+    histBtn:'Historial (calendario)',clear:'Borrar',saveTitle:'Meta de ahorro',saveHint:'Fija una meta, ahorra poco a poco; la barra muestra lo que falta.',
+    lblTarget:'Meta',saveAmt:'Depósito',addSave:'+ Añadir depósito',todayDep:'Depósitos de hoy',progTitle:'Progreso',
+    aiTitle:'Preguntar',aiHint:'Pregunta con lenguaje natural; la IA da consejos. Solo referencia.',
+    setFont:'Tamaño texto (afecta diseño)',std:'S',big:'L',big2:'XL',big3:'XXL',setDisplay:'Modo visual',
+    setEyecare:'Ojos (luz cálida, menos azul)',setNight:'Noche (fondo oscuro)',setTheme:'Tema (poco saturado)',
+    setPattern:'Fondo',patNone:'Ninguno',patDots:'Puntos',patGrid:'Cuadrícula',setLang:'Idioma',setDisc:'Aviso',
+    prevM:'Ant',nextM:'Sig',catLabel:'Filtrar categoría',allCat:'Todas',exportBtn:'Exportar resumen',exportTitle:'Resumen',
+    budgetSet:'Presupuesto mensual',budgetEdit:'Editar',budgetClear:'Borrar',monthOver:'Gastado',monthBudget:'Presupuesto',overBud:'excedido',
+    calDz:'Historial libreta',calSave:'Historial ahorro',delDay:'Borrar todo este día',noRec:'Sin registros este día.',pickDay:'Elige un día con registros.',dpTitle:'Elegir fecha',dpToday:'Volver a hoy',
+    incLabel2:'Ingreso',expLabel2:'Gasto',saveWord:'Depósito',aiNewAskTitle:'¿Iniciar un chat nuevo?',aiNewAskMsg:' Esta conversación se guardará en «Chats anteriores» y podrás verla cuando quieras.',aiNewAskOk:'Crear',aiNewAskTip:'Al cancelar sigues en la conversacion actual y no se pierde ningun mensaje. Si ya esta vacia, no se crea otra.',aiNewNowEmpty:'Ya es un chat nuevo',aiNewDone:'Chat nuevo iniciado',aiHistEmpty:'Aún no hay chats anteriores; envía un mensaje y se guardará.',aihCur:'Actual',aiSet:'Ajustes IA (clave / modelo)',aiKeyHint:'La clave integrada ya funciona; para cambiarla, escríbela y guarda (solo en el dispositivo).',aiModelHint:'Se usa el modelo integrado por defecto; escribe un nombre y guarda para cambiar.',aiHistory:'Chats anteriores',aiPlaceholder:'Escribe un mensaje…',aiEmptyTip:'Pregunta lo que quieras: presupuesto, ahorro, gastos…',aiModel:'Modelo IA',aiModelHint:'Vacío = modelo integrado; consulta la lista si no estás seguro.',aiKey:'Clave IA (Preguntar)',aiKeyHint:'Déjalo vacío para usar la clave integrada; no compartas este archivo.',discText:'Todos los datos se guardan solo en tu dispositivo y no se envían. Resultados y consejos solo como referencia personal.',ledgerDefault:'Predeterminado',ledgerDefaultKeep:'El libro predeterminado no se puede eliminar',trendTitle:'Tendencia',selPeriod:'Período',allYear:'Todos años',allMonth:'Todos meses',allDay:'Todos días',ctLine:'Línea',ctBar:'Barras',ctPie:'Pastel',chartType:'Gráfico',chartEmpty:'Sin registros',trendNote:'Elige año/mes/día para ver la tendencia. Ingreso/gasto/saldo y categoría, luego línea/barras/pastel.',ldgSumTitle:'Resumen de libros',ldgSumHint:'Los datos de cada libro están aislados; esta página es solo de consulta. Crear/renombrar/cambiar color/eliminar vía «Cambiar / elegir libro».',ldgPick:'Elegir un libro',ldgAllTitle:'Resumen de todos los libros',ldgTotalInc:'Ingreso total',ldgTotalExp:'Gasto total',ldgTotalBal:'Saldo total',catPhase:'por periodo',expComp:'Composición de gastos',incComp:'Composición de ingresos',expandAll:'Mostrar todo',foldUp:'Contraer',setTargetBtn:'Fijar meta',targetModify:'Modificar meta',targetDel:'Eliminar meta',achievedTitle:'Meta alcanzada',nextRound:'Siguiente ronda',notNow:'Ahora no',roundHist:'Rondas anteriores',noTargetTip:'Puedes depositar sin meta; fija una para ver el progreso.',targetNeed:'Introduce una meta válida',targetSetOk:'Meta guardada',targetDelOk:'Meta eliminada'},
+  'de':{appTitle:'Spar-Rechner',appSub:'Haushalt · 3 Tools',tabExpense:'Haushalt',tabSave:'Sparziel',tabAi:'KI fragen',
+    btnSet:'Einstellungen',btnClose:'Schließen',btnSend:'Senden',btnNew:'Neu',cancel:'Abbrechen',confirmDel:'Löschen',confirmTitle:'Löschen?',
+    ledgerTitle:'Haushalt',ledgerHint:'Einnahme oder Ausgabe notieren; Diagramm entsteht automatisch. Daten nur auf dem Gerät.',incLabel:'Einnahme',expLabel:'Ausgabe',
+    lblDate:'Datum',lblCat:'Kategorie',lblSrc:'Quelle',lblAmt:'Betrag',unit:'',addExpense:'Zum Haushalt',saveEdit:'Speichern',cancelEdit:'Abbrechen',overviewTitle:'Dieser Monat',kInc:'Einnahme',kExp:'Ausgabe',kBal:'Saldo',
+    histBtn:'Verlauf (Kalender)',clear:'Leeren',saveTitle:'Sparziel',saveHint:'Ziel setzen, schrittweise sparen; Balken zeigt Rest.',
+    lblTarget:'Ziel',saveAmt:'Einzahlung',addSave:'+ Einzahlung',todayDep:'Heute',progTitle:'Fortschritt',
+    aiTitle:'KI fragen',aiHint:'Frage in normaler Sprache; KI gibt Tipps. Nur zur Info.',
+    setFont:'Schriftgröße (wirkt auf Layout)',std:'S',big:'L',big2:'XL',big3:'XXL',setDisplay:'Anzeigemodus',
+    setEyecare:'Augen (warmes Licht, weniger Blau)',setNight:'Nacht (dunkel)',setTheme:'Thema (gedeckt)',
+    setPattern:'Hintergrund',patNone:'Keiner',patDots:'Punkte',patGrid:'Raster',setLang:'Sprache',setDisc:'Hinweis',
+    prevM:'Zurück',nextM:'Weiter',catLabel:'Kategorie filter',allCat:'Alle',exportBtn:'Zusammenfassung',exportTitle:'Übersicht',
+    budgetSet:'Monatsbudget',budgetEdit:'Bearbeiten',budgetClear:'Löschen',monthOver:'Ausgegeben',monthBudget:'Budget',overBud:'über Budget',
+    calDz:'Haushaltsverlauf',calSave:'Sparverlauf',delDay:'Diesen Tag löschen',noRec:'Keine Einträge an diesem Tag.',pickDay:'Tag mit Einträgen wählen.',dpTitle:'Datum wählen',dpToday:'Heute wählen',
+    incLabel2:'Einnahme',expLabel2:'Ausgabe',saveWord:'Einzahlung',aiNewAskTitle:'Neuen Chat starten?',aiNewAskMsg:'Dieser Chat wird unter „Frühere Chats“ gespeichert und bleibt jederzeit abrufbar.',aiNewAskOk:'Neu starten',aiNewAskTip:'Bei Abbrechen bleibst du im aktuellen Chat, nichts geht verloren. Ist er bereits leer, wird kein neuer erstellt.',aiNewNowEmpty:'Bereits ein neuer Chat',aiNewDone:'Neuer Chat gestartet',aiHistEmpty:'Noch keine Chats — sende eine Nachricht, sie wird automatisch gespeichert.',aihCur:'Aktuell',aiSet:'KI-Einstellungen (Schlüssel / Modell)',aiKeyHint:'Der eingebaute Schlüssel ist aktiv; zum Ändern neuen Schlüssel eintragen und speichern (nur auf dem Gerät).',aiModelHint:'Standardmäßig wird das eingebaute Modell genutzt; zum Ändern Modellnamen eintragen und speichern.',aiHistory:'Frühere Chats',aiPlaceholder:'Nachricht schreiben…',aiEmptyTip:'Frag alles zu Budget, Sparen, Ausgaben…',aiModel:'KI-Modell',aiModelHint:'Leer = eingebautes Modell; Liste abfragen, wenn unsicher.',aiKey:'API-Schlüssel (KI fragen)',aiKeyHint:'Leer lassen, um den eingebauten Schlüssel zu nutzen; Datei nicht weitergeben.',discText:'Alle Daten bleiben nur auf Ihrem Gerät und werden nicht hochgeladen. Ergebnisse und Tipps sind nur eine persönliche Orientierung.',ledgerDefault:'Standard',ledgerDefaultKeep:'Das Standard-Buch kann nicht gelöscht werden',trendTitle:'Verlauf',selPeriod:'Zeitraum',allYear:'Alle Jahre',allMonth:'Alle Monate',allDay:'Alle Tage',ctLine:'Linie',ctBar:'Balken',ctPie:'Kreis',chartType:'Diagramm',chartEmpty:'Keine Einträge',trendNote:'Jahr/Monat/Tag wählen, um den Verlauf zu sehen. Einnahme/Ausgabe/Saldo und Kategorie, dann Linie/Balken/Kreis.',ldgSumTitle:'Buch-Übersicht',ldgSumHint:'Die Daten jedes Buchs sind isoliert; diese Seite ist nur zum Ansehen. Erstellen/Umbenennen/Umfärben/Löschen über „Buch wechseln / auswählen“.',ldgPick:'Buch auswählen',ldgAllTitle:'Übersicht aller Bücher',ldgTotalInc:'Gesamteinnahmen',ldgTotalExp:'Gesamtausgaben',ldgTotalBal:'Gesamtsaldo',catPhase:'nach Zeitraum',expComp:'Ausgabenverteilung',incComp:'Einnahmeverteilung',expandAll:'Alle anzeigen',foldUp:'Einklappen',setTargetBtn:'Zielbetrag setzen',targetModify:'Ziel ändern',targetDel:'Ziel löschen',achievedTitle:'Ziel erreicht',nextRound:'Nächste Runde',notNow:'Später',roundHist:'Frühere Runden',noTargetTip:'Einzahlen auch ohne Ziel möglich; mit Ziel siehst du den Fortschritt.',targetNeed:'Gültigen Zielbetrag eingeben',targetSetOk:'Ziel gespeichert',targetDelOk:'Ziel gelöscht'}
+};
+let curLang='zh-CN';
+function T(key){ const d=I18N[curLang]||I18N['zh-CN']; return d[key]!==undefined?d[key]:(I18N['zh-CN'][key]!==undefined?I18N['zh-CN'][key]:key); }
+function applyLang(lang){
+  curLang=lang;
+  document.documentElement.lang=lang;
+  document.querySelectorAll('[data-i]').forEach(el=>{ const k=el.getAttribute('data-i'); if(I18N[lang]&&I18N[lang][k]!==undefined) el.textContent=I18N[lang][k]; else if(I18N['zh-CN'][k]!==undefined) el.textContent=I18N['zh-CN'][k]; });
+  if(I18N[lang]&&I18N[lang]['discText']) $('discText')&&($('discText').textContent=I18N[lang]['discText']);
+  // 动态文案刷新
+  renderBudget(); renderDz(); renderTargetBox(); renderDep(); computeSave(); renderChat();
+  renderLdgAll();
+  const s=lsGet('dz_settings',{}); s.lang=lang; lsSet('dz_settings',s);
+}
+
+/* ============ Tab 切换 ============ */
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('on'));
+  document.querySelectorAll('.panel').forEach(x => x.classList.remove('act'));
+  t.classList.add('on');
+  $('p-' + t.dataset.tab).classList.add('act');
+  if(t.dataset.tab==='ledger') renderLdgAll();     // 切到账本页时刷新汇总与趋势图
+  if(t.dataset.tab==='ai') renderChat();        // 切到问答页时刷新聊天流与输入框文案
+});
+
+/* ============ 1. 点滴账 ============ */
+const INC_CATS=['工资','兼职','投资','奖金','红包','理财收益','其他收入'];
+const EXP_CATS=['餐饮','交通','购物','居住','通讯','医疗','教育','娱乐','人情','其他支出'];
+const CAT_PALETTE=['#0fa37a','#06b6d4','#ff7a59','#ffb020','#7c5cff','#e0559b','#2c6fd6','#56c596','#9aa0a8','#f0762b','#34c759','#ff6482'];
+let catColorMap={}, incColorMap={};
+const INC_PALETTE=['#1a9e5c','#34c759','#0fa37a','#16a34a','#56c596','#2dd4a7'];   // 收入：绿系
+const EXP_PALETTE=['#e0413e','#ff7a59','#ffb020','#f0762b','#e0559b','#d6336c','#c2410c','#ff6482'];  // 支出：红橙系（与收入绿强对比）
+const _csRoot=getComputedStyle(document.documentElement);
+const INCC=(_csRoot.getPropertyValue('--inc')||'#1a9e5c').trim();   // 收入色（绿）
+const EXPC=(_csRoot.getPropertyValue('--exp')||'#e0413e').trim();   // 支出色（红）
+const BALC=(_csRoot.getPropertyValue('--bal')||'#2c6fd6').trim();   // 结余色（蓝，与收入绿/支出红均区分）
+function colorFor(cat, type){
+  if(type==='inc'){ if(!incColorMap[cat]) incColorMap[cat]=INC_PALETTE[Object.keys(incColorMap).length%INC_PALETTE.length]; return incColorMap[cat]; }
+  if(!catColorMap[cat]) catColorMap[cat]=EXP_PALETTE[Object.keys(catColorMap).length%EXP_PALETTE.length]; return catColorMap[cat];
+}
+
+let entries = lsGet('dz_entries', []);
+let dzType = 'inc';
+let dzCat = INC_CATS[0];
+let dzDate = todayStr();
+let dzEditIdx = null;   // 编辑中的记录索引（null = 新增模式）
+/* 预算按账本独立：dz_budgets 以 ledgerId 为键，各账本互不干扰；切换账本自动读该账本预算（未设=0） */
+let dzBudgets = lsGet('dz_budgets', {});
+if(!dzBudgets||typeof dzBudgets!=='object') dzBudgets={};
+const _oldB=lsGet('dz_budget',0); if(_oldB>0 && !dzBudgets['L_default']){ dzBudgets['L_default']=_oldB; lsSet('dz_budgets',dzBudgets); }   // 旧版全局预算迁移到默认账本
+function getBudget(){ return Number(dzBudgets[currentLedger]||0); }
+function saveBudget(v){ v=round2(Number(v)||0); if(v>0) dzBudgets[currentLedger]=v; else delete dzBudgets[currentLedger]; lsSet('dz_budgets',dzBudgets); }
+
+/* 分类滑动选择框（收入/支出各用各自的分类；自定义来源可持久保留为可选选项） */
+let dzCustomOpen=false;   // 自定义分类输入开关：解决「点自定义无反应」的原 bug
+let dzCustCats = lsGet('dz_cust_cats', {inc:[], exp:[]}); // 用户自定义金额来源（按收/支分别保存，永久留存）
+function saveCustCat(cat){
+  cat=(cat||'').trim(); if(!cat) return false;
+  const base = dzType==='inc' ? INC_CATS : EXP_CATS;
+  if(base.includes(cat)) return false;             // 已是默认分类，无需重复保存
+  if(!(dzCustCats[dzType]||[]).includes(cat)){
+    dzCustCats[dzType] = dzCustCats[dzType] || [];
+    dzCustCats[dzType].push(cat);
+    lsSet('dz_cust_cats', dzCustCats);
+  }
+  return true;
+}
+let dzSrcList = lsGet('dz_src_list', []);   // 历史金额来源（输入框联想建议）
+function saveSrc(s){
+  s=(s||'').trim(); if(!s) return;
+  if(!dzSrcList.includes(s)){ dzSrcList.unshift(s); if(dzSrcList.length>20) dzSrcList.length=20; lsSet('dz_src_list',dzSrcList); }
+  renderSrcList();
+}
+function renderSrcList(){
+  const dl=$('dzSrcList'); if(dl) dl.innerHTML = dzSrcList.map(s=>`<option value="${esc(s)}">`).join('');
+}
+function curCatList(){
+  const base = dzType==='inc' ? INC_CATS : EXP_CATS;
+  const cust = (dzCustCats[dzType]||[]).filter(c=>!base.includes(c));
+  return base.concat(cust);
+}
+function renderCatRoll(){
+  const list=curCatList();
+  const cur = list.includes(dzCat) ? dzCat : list[0];
+  $('dzCatRoll').innerHTML = list.map(c=>`<button class="chip ${c===cur?'on':''}" data-c="${esc(c)}">${esc(c)}</button>`).join('')
+    + `<button class="chip custom" data-c="__custom">＋自定义</button>`;
+}
+function renderCatWrap(){
+  if(dzCustomOpen){
+    $('dzCatWrap').innerHTML=`<div class="custrow"><input id="dzCustom" placeholder="输入自定义来源/分类" value="${esc(dzCat)}">
+      <button class="custback" id="dzCustOk">确定</button>
+      <button class="custback" id="dzCustBack">返回</button></div>`;
+    const ci=$('dzCustom'); if(ci){ ci.focus(); if(ci.select) ci.select(); }
+    return;
+  }
+  if(!dzCat || !curCatList().includes(dzCat)) dzCat=curCatList()[0];
+  $('dzCatWrap').innerHTML='<div class="catroll" id="dzCatRoll"></div>';
+  renderCatRoll();
+}
+$('dzCatWrap').addEventListener('click', e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  if(b.id==='dzCustBack'){ dzCustomOpen=false; renderCatWrap(); return; }   // 返回：放弃本次输入
+  if(b.id==='dzCustOk'){                                                    // 确定：保存为自定义来源并可复用
+    const v=(dzCat||'').trim();
+    if(!v){ toast('请输入自定义分类'); return; }
+    saveCustCat(v); dzCustomOpen=false; renderCatWrap(); return;
+  }
+  if(b.classList.contains('custom')){ dzCustomOpen=true; dzCat=''; renderCatWrap(); return; }
+  dzCustomOpen=false; dzCat=b.dataset.c; renderCatRoll();
+});
+$('dzCatWrap').addEventListener('input', e=>{ if(e.target.id==='dzCustom'){ dzCat=e.target.value.trim(); } });
+
+$('dzType').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+  $('dzType').querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); dzType=b.dataset.t; dzCustomOpen=false;
+  const list=curCatList(); if(!list.includes(dzCat)) dzCat=list[0];
+  renderCatWrap();
+});
+setDateVal('dzDate', dzDate);
+$('dzDate').addEventListener('input', e=>{
+  if(e.target.value && e.target.value > todayStr()){ toast('日期不能晚于今天，最多只能选到今天'); e.target.value=todayStr(); }
+  dzDate=e.target.value||todayStr(); renderDz();
+});
+enforcePastDate($('dzDate'));
+/* 编辑模式开关：切换「添加到点滴账」↔「保存修改」并显示/隐藏取消按钮 */
+function setEditMode(on){
+  const add=$('dzAdd'), canc=$('dzEditCancel');
+  if(on){ add.dataset.i='saveEdit'; add.textContent=T('saveEdit'); canc.style.display=''; }
+  else  { add.dataset.i='addExpense'; add.textContent=T('addExpense'); canc.style.display='none';
+          $('dzAmt').value=''; $('dzSrc').value=''; dzEditIdx=null; }
+}
+/* 把某条记录载入表单，进入编辑模式（可再次修改分类/来源/金额/日期） */
+function loadEntryForEdit(i){
+  const e=entries[i]; if(!e) return;
+  dzEditIdx=i; dzType=e.type;
+  $('dzType').querySelectorAll('button').forEach(x=>x.classList.toggle('on', x.dataset.t===dzType));
+  dzCustomOpen=false;
+  if(!curCatList().includes(e.cat)) saveCustCat(e.cat);  // 自定义分类亦确保可选并高亮
+  dzCat=e.cat;
+  dzDate=e.date||todayStr(); setDateVal('dzDate', dzDate);
+  $('dzSrc').value=e.src||'';
+  $('dzAmt').value=e.amt;
+  renderCatWrap(); setEditMode(true);
+  $('dzAmt').focus();
+  if($('p-expense').scrollIntoView) $('p-expense').scrollIntoView({behavior:'smooth',block:'start'});
+}
+$('dzEditCancel').onclick=()=>{ setEditMode(false); renderDz(); };
+$('dzAmt').addEventListener('input', e=>clip2(e.target));   // 金额输入实时限制两位小数
+$('dzAdd').onclick=()=>{
+  const cat=dzCat.trim()||(dzType==='inc'?'其他收入':'其他支出');
+  const raw=parseFloat($('dzAmt').value);
+  if(!isFinite(raw)||raw<=0){ toast('请输入有效金额'); return; }
+  const amt=round2(raw);                       // 严格两位小数，不超出
+  let src=($('dzSrc').value||'').trim();
+  saveCustCat(cat);                          // 自定义分类自动留存，下次直接选
+  if(src) saveSrc(src);                      // 自定义金额来源自动留存，供联想
+  if(dzCustomOpen){ dzCustomOpen=false; renderCatWrap(); }  // 退出自定义输入态并刷新选项
+  if(dzEditIdx!==null && entries[dzEditIdx]){            // 修改模式：更新原记录
+    entries[dzEditIdx]={type:dzType,cat,amt,date:dzDate,src:src||'',lid:curLedgerId()};
+    toast(`已修改 ${dzType==='inc'?T('incLabel2'):T('expLabel2')}·${cat}${src?' · '+src:''} ${fmt(amt)}`);
+  } else {                                               // 新增模式：追加
+    entries.push({type:dzType,cat,amt,date:dzDate,src:src||'',lid:curLedgerId()});
+    toast(`已添加 ${dzType==='inc'?T('incLabel2'):T('expLabel2')}·${cat}${src?' · '+src:''} ${fmt(amt)}（${dzDate}）`);
+  }
+  setEditMode(false);
+  lsSet('dz_entries',entries); renderDz(); renderBudget();
+};
+/* 金额修改统一走「改」按钮载入表单编辑（行内金额输入框已移除，只保留一个修改入口） */
+/* 修改（载入表单）/ 删除（二次确认） */
+$('dzList').addEventListener('click',e=>{
+  if(e.target.classList.contains('cedit')){ loadEntryForEdit(+e.target.dataset.i); return; }
+  if(e.target.classList.contains('cdel')){ const i=+e.target.dataset.i; confirmDel(T('confirmTitle'), ()=>{ entries.splice(i,1); lsSet('dz_entries',entries); renderDz(); renderBudget(); }); }
+});
+$('dzClear').onclick=()=>{ confirmDel(T('confirmTitle'), ()=>{ entries=[]; lsSet('dz_entries',entries); renderDz(); renderBudget(); toast(T('clear')); }); };
+
+function renderDz(){
+  const ym=curMonth();
+  const me=curEntriesRaw().filter(e=>e.date&&e.date.slice(0,7)===ym);
+  const inc=me.filter(e=>e.type==='inc').reduce((s,e)=>s+e.amt,0);
+  const exp=me.filter(e=>e.type==='exp').reduce((s,e)=>s+e.amt,0);
+  const bal=inc-exp;
+  $('dzInc').textContent = inc>0 ? ('↑ '+fmt(inc)) : '—';
+  $('dzExp').textContent = exp>0 ? ('↓ '+fmt(exp)) : '—';
+  $('dzBal').textContent = bal!==0 ? fmt(bal) : '—';
+
+  $('dzListHdr').textContent = `${esc(T('ledgerTitle'))}（${dzDate}）`;
+  const todayRows = curEntries().filter(o=>o.e.date===dzDate);
+  $('dzList').innerHTML = todayRows.length
+    ? todayRows.map(o=>`<div class="dzitem"><span class="arr ${o.e.type==='inc'?'inc':'exp'}">${o.e.type==='inc'?'↑':'↓'}</span>
+        <span class="cmeta"><span class="cn">${o.e.type==='inc'?T('incLabel2'):T('expLabel2')}·${esc(o.e.cat)}</span>${o.e.src?`<span class="csrc">${esc(o.e.src)}</span>`:''}</span>
+        <span class="camt ${o.e.type==='inc'?'inc':'exp'}">${fmt(o.e.amt)}</span>
+        <button class="cedit" data-i="${o.i}" title="修改">改</button>
+        <button class="cdel" data-i="${o.i}">×</button></div>`).join('')
+    : '<div class="tips" style="padding:6px 0">'+T('noRec')+'</div>';
+
+  // 环形图 ×2：支出构成 / 收入构成 各一个环形图（环上直标分类+占比，中心=该类合计）
+  const byType={inc:{}, exp:{}};
+  me.forEach(e=>{ const t=byType[e.type]; if(!t) return; t[e.cat]=(t[e.cat]||0)+(e.amt||0); });
+  drawDonut('dzDonutExp','dzLegendExp','dzDonutExpTtl', byType.exp, 'exp');
+  drawDonut('dzDonutInc','dzLegendInc','dzDonutIncTtl', byType.inc, 'inc');
+
+  // 提示：聚焦「支出中占比最大的一类」（与收入类别无关）
+  const bycatExp={}; me.filter(e=>e.type==='exp').forEach(e=>{ bycatExp[e.cat]=(bycatExp[e.cat]||0)+e.amt; });
+  const expCats=Object.keys(bycatExp);
+  let tip='';
+  if(me.length===0) tip='<div>'+T('pickDay')+'</div>';
+  else if(inc>0 && exp>inc) tip='<div class="t">'+T('kExp')+' 已超过 '+T('kInc')+'，先压缩占比最大的一类开销。</div>';
+  else {
+    const top=expCats.sort((a,b)=>bycatExp[b]-bycatExp[a])[0];
+    if(top && bycatExp[top]/exp>0.4) tip=`<div class="t">「${esc(top)}」占了支出的 ${pct(bycatExp[top]/exp)}，适当控制能省下一笔。</div>`;
+    else if(inc>0) tip='<div class="ok">收支为正，保持节奏，记得留点应急金。</div>';
+    else tip=`<div>当前支出 ${fmt(exp)}，加上收入记录就能看结余了。</div>`;
+  }
+  $('dzTip').innerHTML=tip;
+}
+
+/* 点滴账·本月总览：分类环形图（参考记账统计样式）——环上按分类分块，环外用引线直标「分类 占比」，中心=该类型合计金额 */
+function drawDonut(cvId, legId, ttlId, bycat, type){
+  const cv=$(cvId), leg=$(legId), ttl=$(ttlId);
+  if(ttl) ttl.textContent = type==='exp' ? T('expComp') : T('incComp');
+  if(!cv) return;
+  const cats=Object.keys(bycat||{}).map(c=>({c, v:bycat[c]})).filter(o=>o.v>0).sort((a,b)=>b.v-a.v);
+  const total=cats.reduce((s,o)=>s+o.v,0);
+  const dpr=window.devicePixelRatio||1;
+  const w=cv.clientWidth||300, h=cv.clientHeight||230;
+  cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr);
+  let ctx=null; try{ ctx=cv.getContext('2d'); }catch(e){ ctx=null; }
+  if(!ctx) return;
+  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,w,h);
+  const cs=getComputedStyle(document.documentElement);
+  const ink=(cs.getPropertyValue('--ink')||'#222').trim();
+  const muted=(cs.getPropertyValue('--muted')||'#888').trim();
+  const cardBg=(cs.getPropertyValue('--card')||'#fff').trim();
+  if(!cats.length || !(total>0)){   // 空态
+    if(leg) leg.innerHTML='';
+    ctx.fillStyle=muted; ctx.font='12px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.globalAlpha=0.7; ctx.fillText(T('chartEmpty'), w/2, h/2); ctx.globalAlpha=1;
+    return;
+  }
+  const cx=w/2, cy=h/2, r=Math.max(40, Math.min(h/2-16, w*0.23)), rIn=r*0.58;
+  let acc=-Math.PI/2;   // 从正上方开始，顺时针
+  const items=[];
+  cats.forEach(o=>{
+    const ang=o.v/total*Math.PI*2, a0=acc, a1=acc+ang;
+    ctx.beginPath(); ctx.arc(cx,cy,r,a0,a1); ctx.arc(cx,cy,rIn,a1,a0,true); ctx.closePath();
+    ctx.fillStyle=colorFor(o.c,type); ctx.fill();
+    ctx.strokeStyle=cardBg; ctx.lineWidth=2; ctx.stroke();   // 扇区之间白色缝，块块分明
+    items.push({c:o.c, v:o.v, mid:(a0+a1)/2, p:o.v/total});
+    acc=a1;
+  });
+  // 中心：该类型合计金额 + 收入/支出
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillStyle=ink; ctx.font='700 15px sans-serif'; ctx.fillText(fmt(round2(total)), cx, cy-8);
+  ctx.fillStyle=muted; ctx.font='11px sans-serif'; ctx.fillText(type==='exp'?T('expLabel2'):T('incLabel2'), cx, cy+10);
+  // 环外直标「分类 占比」：左右两侧按角度排序均匀排布（不重叠），引线从扇区中点引出
+  const labItems=items.filter(it=>it.p>=0.02);   // 太小的扇区不标字（图例中仍可见），避免拥挤
+  [[1, labItems.filter(it=>Math.cos(it.mid)>=0)], [-1, labItems.filter(it=>Math.cos(it.mid)<0)]].forEach(([side, arr])=>{
+    if(!arr.length) return;
+    arr.sort((a,b)=>Math.sin(a.mid)-Math.sin(b.mid));
+    const rLab=r+10, xElb=cx+side*(rLab+4), xTxt=cx+side*(rLab+12);
+    const maxTxtW=Math.max(30, w/2-(rLab+14)-4);
+    arr.forEach((it,i)=>{
+      const y=cy-r + (i+0.5)*(2*r/arr.length);
+      const ex=cx+Math.cos(it.mid)*r, ey=cy+Math.sin(it.mid)*r;
+      ctx.strokeStyle=ink; ctx.globalAlpha=0.35; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(ex,ey); ctx.lineTo(xElb,y); ctx.stroke(); ctx.globalAlpha=1;
+      ctx.fillStyle=ink; ctx.font='11px sans-serif';
+      ctx.textAlign=side>0?'left':'right'; ctx.textBaseline='middle';
+      const pTxt=(it.p*100).toFixed(it.p<0.1?1:0)+'%';
+      let name=it.c, txt=name+' '+pTxt;
+      while(ctx.measureText(txt).width>maxTxtW && name.length>1){ name=name.slice(0,-1); txt=name+'… '+pTxt; }
+      ctx.fillText(txt, xTxt, y);
+    });
+  });
+  // 图例：分类 + 金额 + 占比
+  if(leg) leg.innerHTML=cats.map(o=>`<div class="lg"><span class="dot" style="background:${colorFor(o.c,type)}"></span>
+    <span class="nm">${esc(o.c)}</span><span class="camt">${fmt(o.v)}</span><span class="pc">${pct(o.v/total)}</span></div>`).join('');
+}
+
+/* ============ 消费趋势图（账本汇总页专用；折线 / 条形 / 饼图，纯 canvas，无外部依赖） ============ */
+const _now0=new Date();
+const ldTrend={y:String(_now0.getFullYear()), m:String(_now0.getMonth()+1), d:'', k:'exp', cat:'', ctype:'bar'};   // 账本汇总趋势状态
+let ldChartGeo=null;   // 最近一次绘制的可点击几何信息（扇形/柱/点），供点击命中检测
+
+function segOn(groupId, btn){
+  const g=$(groupId); if(!g) return;
+  g.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b===btn));
+}
+/* 分类下拉：随收入/支出切换，列出「全部 + 该类型分类（含自定义）」 */
+function trendCatList(k){
+  const base = k==='inc' ? INC_CATS : EXP_CATS;
+  return base.concat((dzCustCats[k]||[]).filter(c=>!base.includes(c)));
+}
+function fillTrendCat(st, selId){
+  const sel=$(selId); if(!sel) return;
+  sel.innerHTML = `<option value="">${esc(T('allCat'))}</option>` + trendCatList(st.k).map(c=>`<option value="${esc(c)}" ${st.cat===c?'selected':''}>${esc(c)}</option>`).join('');
+}
+/* 时期下拉：年 / 月 / 日（可逐级下钻；留空=全部） */
+function daysInScopeOf(st){ const y=st.y!==''?+st.y:new Date().getFullYear(); const m=st.m!==''?+st.m:new Date().getMonth()+1; return new Date(y,m,0).getDate(); }
+function fillTrendPeriod(st, yId, mId, dId, lid){
+  const all=entries.filter(e=>e.lid===lid);
+  const yrs=new Set(); all.forEach(e=>{ const y=parseInt((e.date||'').slice(0,4),10); if(y) yrs.add(y); });
+  // 年份范围：以「当前年 + 未来10年、过去5年」为基准（未来年份多于早期年份），并向下/向上包含数据中出现过的年份，避免早期记录选不到
+  const cur=new Date().getFullYear();
+  let lo=cur-5, hi=cur+10;
+  yrs.forEach(y=>{ if(y<lo) lo=y; if(y>hi) hi=y; });
+  const yList=[]; for(let y=lo; y<=hi; y++) yList.push(y);   // 年份升序：早期在上、当前/未来在下
+  const yS=$(yId), mS=$(mId), dS=$(dId); if(!yS||!mS||!dS) return;
+  yS.innerHTML  = `<option value="">${esc(T('allYear'))}</option>` + yList.map(y=>`<option value="${y}" ${String(st.y)===String(y)?'selected':''}>${y}</option>`).join('');
+  mS.innerHTML = `<option value="">${esc(T('allMonth'))}</option>` + [...Array(12)].map((_,i)=>{ const m=i+1; return `<option value="${m}" ${String(st.m)===String(m)?'selected':''}>${m}</option>`; }).join('');
+  const dim=daysInScopeOf(st);
+  dS.innerHTML   = `<option value="">${esc(T('allDay'))}</option>` + [...Array(dim)].map((_,i)=>{ const d=i+1; return `<option value="${d}" ${String(st.d)===String(d)?'selected':''}>${d}</option>`; }).join('');
+}
+/* 统计粒度：由年/月/日选择框的留空情况推导（年空→年趋势；月空→月趋势；日空→日趋势；全填→当日构成） */
+function trendGran(st){ if(st.y==='') return 'year'; if(st.m==='') return 'month'; if(st.d==='') return 'day'; return 'oneday'; }
+/* 取趋势图在「已选年/月/日」下的时间阶段（用于选中分类后按阶段拆分占比）
+   - 选了年+月（日空）→ 该月每一天
+   - 只选了年（月空）→ 该年每一月
+   - 什么都没选 → 数据中出现的每一年
+   - 具体某天（年/月/日全填）→ 返回 null（由调用方回退为分类构成） */
+function trendPhases(st){
+  if(st.y!=='' && st.m!=='' && st.d===''){
+    const y=+st.y, m=+st.m, days=new Date(y,m,0).getDate();
+    return [...Array(days)].map((_,i)=>{ const dd=i+1; return {label:dd+'日', match:e=>parseInt(e.date.slice(8,10),10)===dd}; });
+  }
+  if(st.y!=='' && st.m===''){
+    return [...Array(12)].map((_,i)=>{ const mm=i+1; return {label:(mm)+'月', match:e=>parseInt(e.date.slice(5,7),10)===mm}; });
+  }
+  if(st.y===''){
+    const yrs=[]; entries.forEach(e=>{ const yy=parseInt((e.date||'').slice(0,4),10); if(yy&&!yrs.includes(yy)) yrs.push(yy); }); yrs.sort((a,b)=>a-b);
+    return yrs.map(yy=>({label:yy+'年', match:e=>e.date&&e.date.slice(0,4)===String(yy)}));
+  }
+  return null;
+}
+/* 一条记录是否落在所选时期窗口内 */
+function inScopeOf(date, st){
+  if(!date) return false;
+  const y=parseInt(date.slice(0,4),10), m=parseInt(date.slice(5,7),10), d=parseInt(date.slice(8,10),10);
+  if(st.y!=='' && y!==+st.y) return false;
+  if(st.m!=='' && m!==+st.m) return false;
+  if(st.d!=='' && d!==+st.d) return false;
+  return true;
+}
+/* 取某条记录在所选类型下的金额（结余=收入-支出，带符号） */
+function amtOfK(e, k){ if(k==='inc') return e.type==='inc'?e.amt:0; if(k==='exp') return e.type==='exp'?e.amt:0; return e.type==='inc'?e.amt:-e.amt; }
+
+/* 折线 / 条形：按粒度分桶聚合（已按账本、类型、分类过滤） */
+function trendAgg(st, lid){
+  const win=entries.filter(e=> e.lid===lid && inScopeOf(e.date, st) && (!st.cat || e.cat===st.cat));
+  const g=trendGran(st); let labels=[], buckets=[];
+  if(g==='year'){
+    const yrs=[]; win.forEach(e=>{ const y=parseInt((e.date||'').slice(0,4),10); if(y&&!yrs.includes(y)) yrs.push(y); });
+    yrs.sort((a,b)=>a-b); if(!yrs.length) yrs.push(new Date().getFullYear());
+    labels=yrs.map(y=>y+'年'); buckets=yrs.map(y=> win.filter(e=>e.date&&e.date.slice(0,4)===String(y)).reduce((s,e)=>s+amtOfK(e, st.k),0));
+  } else if(g==='month'){
+    const y=+st.y; const arr=[...Array(12)].map((_,i)=>i+1);
+    labels=arr.map(m=> m+'月'); buckets=arr.map(m=> win.filter(e=>parseInt(e.date.slice(5,7),10)===m).reduce((s,e)=>s+amtOfK(e, st.k),0));
+  } else if(g==='day'){
+    const y=+st.y, m=+st.m; const days=new Date(y,m,0).getDate();
+    labels=[]; for(let d=1; d<=days; d++) labels.push(d+'日');
+    buckets=new Array(days).fill(0);
+    win.forEach(e=>{ const dd=parseInt(e.date.slice(8,10),10); if(dd>=1&&dd<=days) buckets[dd-1]+=amtOfK(e, st.k); });
+  } else { // oneday：按分类构成（余额=净收支）
+    const bycat={}; win.forEach(e=>{ bycat[e.cat]=(bycat[e.cat]||0)+amtOfK(e, st.k); });
+    const cats=Object.keys(bycat).sort((a,b)=>bycat[b]-bycat[a]);
+    labels=cats; buckets=cats.map(c=>bycat[c]);
+  }
+  return {labels, buckets, gran:g};
+}
+/* 饼图：按所选时期 + 类型做占比
+   - 结余模式：显示收入 vs 支出两块
+   - 选中具体分类：按所选时期的时间阶段展示「该类在各阶段的消费占比」（如 9 月+餐饮 → 各天餐饮占比）
+   - 未选分类：按分类构成（按所选收入/支出类型单独统计，互不混入） */
+function trendPieAgg(st, lid){
+  const base=entries.filter(e=> e.lid===lid && inScopeOf(e.date, st));
+  if(st.k==='bal'){
+    let inc=0, exp=0; base.forEach(e=>{ if(e.type==='inc') inc+=(e.amt||0); else if(e.type==='exp') exp+=(e.amt||0); });
+    const bal=round2(inc-exp);
+    // 环=收入(绿)+支出(红)两块真实资金流，中心=结余(蓝,净)；三者各归其位，避免收入/结余混淆
+    return {cats:['inc','exp'], vals:[inc,exp], total:inc+exp, special:'bal', inc, exp, bal};
+  }
+  // 选中具体分类 → 按时间阶段拆分该类消费占比
+  if(st.cat){
+    const phases=trendPhases(st);
+    if(phases){
+      const vals=phases.map(p=> base.filter(p.match).filter(e=>e.cat===st.cat).reduce((s,e)=>s+amtOfK(e, st.k),0));
+      const cats=phases.map(p=>p.label);
+      const total=vals.reduce((s,v)=>s+v,0);
+      return {cats, vals, total, special:'cat', cat:st.cat};
+    }
+  }
+  // 未选分类 → 按分类构成（按所选收入/支出类型单独统计）
+  const bycat={}; base.forEach(e=>{ if(e.type!==st.k) return; bycat[e.cat]=(bycat[e.cat]||0)+(e.amt||0); });  // 饼图按所选类型（收入/支出）单独统计，绝不混入另一类
+  const cats=Object.keys(bycat).sort((a,b)=>bycat[b]-bycat[a]);
+  return {cats, vals:cats.map(c=>bycat[c]), total:cats.reduce((s,c)=>s+bycat[c],0)};
+}
+function shortNum(v){ if(v>=10000) return (v/10000).toFixed(v>=100000?0:1)+'万'; if(v>=1000) return (v/1000).toFixed(0)+'k'; return Math.round(v).toString(); }
+function drawEmpty(ctx,w,h,muted){ ctx.fillStyle=muted; ctx.font='12px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(T('chartEmpty'), w/2, h/2); }
+function roundRectTop(ctx,x,y,w,h,r){ if(h<=0){ return; } r=Math.min(r,w/2,h); ctx.beginPath();
+  ctx.moveTo(x,y+h); ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r); ctx.lineTo(x+w,y+h); ctx.closePath(); }
+
+function renderTrendChart(st, cvId, legId, lid){
+  hideChartTip();
+  ldChartGeo=null;
+  const cv=$(cvId); if(!cv) return;
+  const wrap=$(legId); if(wrap) wrap.innerHTML='';
+  if(cv.clientWidth===0) return;                 // 面板隐藏时不绘制（避免 0 宽失真）
+  const dpr=window.devicePixelRatio||1;
+  const w=cv.clientWidth, h=Math.max(cv.clientHeight||220, 120);
+  cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr);
+  let ctx=null; try{ ctx=cv.getContext('2d'); }catch(e){ ctx=null; }
+  if(!ctx) return;                               // 无 canvas 支持的环境（如 jsdom）直接跳过
+  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,w,h);
+  const cs=getComputedStyle(document.documentElement);
+  const ink=(cs.getPropertyValue('--ink')||'#222').trim();
+  const muted=(cs.getPropertyValue('--muted')||'#888').trim();
+  const line=(cs.getPropertyValue('--line')||'#ddd').trim();
+  const incC=(cs.getPropertyValue('--inc')||'#1a9e5c').trim();
+  const expC=(cs.getPropertyValue('--exp')||'#e0413e').trim();
+  const balC=(cs.getPropertyValue('--bal')||'#2c6fd6').trim();
+  const series=st.k==='inc'?incC : st.k==='exp'?expC : balC;
+
+  function drawSeries(arr, col){
+    ctx.strokeStyle=col; ctx.lineWidth=2; ctx.beginPath();
+    arr.forEach((v,i)=>{ const x=x0+bw*i+bw/2; const y=Y(v); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
+    ctx.stroke();
+    arr.forEach((v,i)=>{ const x=x0+bw*i+bw/2; const y=Y(v); ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fillStyle=col; ctx.fill(); });
+  }
+  function drawBar(bx, v, g, col){ const top=Y(v), bh=Math.abs(top-yZero); ctx.fillStyle=col; ctx.globalAlpha=0.9; ctx.fillRect(bx, Math.min(top,yZero), g, bh); ctx.globalAlpha=1; }
+
+  if(st.ctype==='pie'){
+    const pie=trendPieAgg(st, lid);
+    if(!pie.total || !pie.cats.length){ drawEmpty(ctx,w,h,muted); return; }
+    const cx=w/2, cy=h/2, r=Math.min(w,h)/2-10; let acc=0;
+    if(pie.special==='bal'){
+      // 环=收入(绿)+支出(红)两块真实资金流；两块之间留白缝；扇区上直接写「收入/支出」+金额，不依赖图例也能一眼分清
+      // 中心=结余(蓝,净)=收入−支出，白描边保证叠在绿/红扇区上也清晰；图例三行收绿/支红/结蓝 + 公式说明
+      const cols=[incC, expC], names=['收入','支出'], gap=0.07; const slices=[];
+      pie.cats.forEach((c,i)=>{ const ang=pie.vals[i]/(pie.total||1)*Math.PI*2; if(ang<=0) return;
+        const a0=acc+gap/2, a1=acc+ang-gap/2;
+        ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r, a0, a1); ctx.closePath(); ctx.fillStyle=cols[i]; ctx.fill();
+        if(ang>0.22){ const mid=acc+ang/2, lr=r*0.6, lx=cx+Math.cos(mid)*lr, ly=cy+Math.sin(mid)*lr;
+          ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.font='700 12px sans-serif'; ctx.fillText(names[i], lx, ly-7);
+          ctx.font='11px sans-serif'; ctx.fillText(fmt(pie.vals[i]), lx, ly+7); }
+        slices.push({a0,a1, label:names[i], amt:pie.vals[i], color:cols[i], sub:T('kBal')+' = '+T('incLabel2')+' − '+T('expLabel2'), pct:pct(pie.vals[i]/(pie.total||1))});
+        acc+=ang; });
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.font='700 15px sans-serif'; ctx.lineWidth=3; ctx.strokeStyle='#fff'; ctx.strokeText(fmt(pie.bal), cx, cy-8);   // 白描边，避免与绿/红 slices 混淆
+      ctx.fillStyle=balC; ctx.fillText(fmt(pie.bal), cx, cy-8);
+      ctx.fillStyle=muted; ctx.font='11px sans-serif'; ctx.fillText(T('kBal'), cx, cy+9);
+      if(wrap) wrap.innerHTML=
+        `<div class="lg"><span class="dot" style="background:${incC}"></span><span class="nm">${T('incLabel2')}</span><span class="camt">${fmt(pie.inc)}</span></div>`+
+        `<div class="lg"><span class="dot" style="background:${expC}"></span><span class="nm">${T('expLabel2')}</span><span class="camt">${fmt(pie.exp)}</span></div>`+
+        `<div class="lg"><span class="dot" style="background:${balC}"></span><span class="nm">${T('kBal')}（净）</span><span class="camt">${fmt(pie.bal)}</span></div>`+
+        `<div class="lg note">${T('kBal')} = ${T('incLabel2')} − ${T('expLabel2')}</div>`;
+      ldChartGeo={kind:'pie',cx,cy,r,slices,mode:'bal'};
+      return;
+    }
+    // 分类构成 / 选中分类后按阶段拆分，均用通用饼图渲染（按收入/支出类型取对应色系）
+    const kText=st.k==='inc'?T('incLabel2'):T('expLabel2'); const slices=[];
+    pie.cats.forEach((c,i)=>{ const ang=pie.vals[i]/(pie.total||1)*Math.PI*2; ctx.beginPath(); ctx.moveTo(cx,cy);
+      ctx.arc(cx,cy,r,acc,acc+ang); ctx.closePath(); ctx.fillStyle=colorFor(c, st.k); ctx.fill();
+      // 标签：cat 模式=时间阶段(月/日)；其余=分类名。sub：cat 模式=「分类·收入/支出」；其余=收入/支出
+      const lab=pie.special==='cat'?c:`${esc(c)}`;
+      const sub=pie.special==='cat'?`${esc(pie.cat)} · ${kText}`:kText;
+      slices.push({a0:acc, a1:acc+ang, label:lab, amt:pie.vals[i], color:colorFor(c, st.k), sub, pct:pct(pie.vals[i]/(pie.total||1))});
+      acc+=ang; });
+    ctx.fillStyle=ink; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font='700 14px sans-serif';
+    if(pie.special==='cat'){ ctx.fillText(esc(pie.cat), cx, cy-7); }
+    else { ctx.fillText(fmt(pie.total), cx, cy-7); }
+    ctx.fillStyle=muted; ctx.font='11px sans-serif';
+    if(pie.special==='cat'){ ctx.fillText(kText+'·'+T('catPhase'), cx, cy+10); }
+    else { ctx.fillText(kText, cx, cy+10); }
+    if(wrap) wrap.innerHTML=pie.cats.map((c,i)=>`<div class="lg"><span class="dot" style="background:${colorFor(c, st.k)}"></span>
+      <span class="nm">${esc(c)}</span><span class="camt">${fmt(pie.vals[i])}</span><span class="pc">${pct(pie.vals[i]/pie.total)}</span></div>`).join('');
+    ldChartGeo={kind:'pie',cx,cy,r,slices,mode:pie.special==='cat'?'cat':'comp'};
+    return;
+  }
+
+  // 折线 / 条形：结余模式同时呈现「收入 / 支出 / 净结余」三条序列（净结余=收入-支出，可为负）
+  let incB=null, expB=null, balB=null;
+  if(st.k==='bal'){
+    incB = trendAgg({...st, k:'inc'}, lid).buckets;
+    expB = trendAgg({...st, k:'exp'}, lid).buckets;
+    balB = incB.map((v,i)=>round2(v - (expB[i]||0)));
+  }
+  const {labels,buckets}=trendAgg(st, lid); const n=labels.length;
+  if(!n){ drawEmpty(ctx,w,h,muted); return; }
+  const allV = st.k==='bal' ? incB.concat(expB, balB) : buckets;
+  if(allV.length && allV.every(v=>!(v>0)&&!(v<0))){ drawEmpty(ctx,w,h,muted); return; }
+  const maxV=Math.max(...allV,0), minV=Math.min(...allV,0);
+  const max=Math.max(maxV,1), min=Math.min(minV,0);   // 始终以 0 为基线，金额一律正向（向上）显示
+  const range=(max-min)||1;
+  const padL=48, padR=12, padT=14, padB=26;
+  const plotW=w-padL-padR, plotH=h-padT-padB;
+  const x0=padL;
+  const Y=v=> padT+plotH - (v-min)/range*plotH;
+  const yZero=Y(0);
+  ctx.strokeStyle=line; ctx.fillStyle=muted; ctx.font='10px sans-serif'; ctx.textAlign='right'; ctx.textBaseline='middle';
+  const ticks=4;
+  for(let i=0;i<=ticks;i++){ const val=min+(max-min)*i/ticks; const y=Y(val);
+    ctx.globalAlpha=0.6; ctx.beginPath(); ctx.moveTo(x0,y); ctx.lineTo(x0+plotW,y); ctx.stroke(); ctx.globalAlpha=1;
+    ctx.fillText('¥'+shortNum(val), x0-6, y); }
+  const bw=plotW/n;
+  const kText=st.k==='inc'?T('incLabel2') : st.k==='exp'?T('expLabel2') : T('kBal');
+  const tot=allV.reduce((a,b)=>a+Math.abs(b),0)||1;
+  let bars=[], pts=[];
+  if(st.ctype==='bar'){
+    if(st.k==='bal'){
+      // 结余模式：三组并排柱——收入(绿)↑ / 支出(红)↑ / 净结余(蓝，向上盈余向下赤字)，三色强区分
+      const g=Math.max(1.5, bw*0.26);
+      const gap=Math.max(1, (bw - g*3)/2), xBase=x0+gap;
+      incB.forEach((v,i)=>{ drawBar(xBase+bw*i,     v, g, incC); bars.push({x:xBase+bw*i, w:g, label:labels[i], amt:v, color:incC, sub:T('incLabel2'), pct:pct(Math.abs(v)/tot)}); });
+      expB.forEach((v,i)=>{ drawBar(xBase+bw*i+g,   v, g, expC); bars.push({x:xBase+bw*i+g, w:g, label:labels[i], amt:v, color:expC, sub:T('expLabel2'), pct:pct(Math.abs(v)/tot)}); });
+      balB.forEach((v,i)=>{ drawBar(xBase+bw*i+g*2, v, g, balC); bars.push({x:xBase+bw*i+g*2, w:g, label:labels[i], amt:v, color:balC, sub:T('kBal')+'（净）', pct:pct(Math.abs(v)/tot)}); });
+    } else {
+      const barW=Math.max(2, bw*0.62);
+      buckets.forEach((v,i)=>{ const bx=x0+bw*i+(bw-barW)/2; const top=Y(v), bh=Math.abs(top-yZero); ctx.fillStyle=series; ctx.globalAlpha=0.85; ctx.fillRect(bx, Math.min(top,yZero), barW, bh); ctx.globalAlpha=1;
+        bars.push({x:bx, w:barW, label:labels[i], amt:v, color:series, sub:kText, pct:pct(v/(buckets.reduce((a,b)=>a+b,0)||1))}); });
+    }
+  } else {
+    if(st.k==='bal'){
+      drawSeries(incB, incC); drawSeries(expB, expC); drawSeries(balB, balC);
+      incB.forEach((v,i)=>pts.push({x:x0+bw*i+bw/2, y:Y(v), label:labels[i], amt:v, color:incC, sub:T('incLabel2'), pct:pct(Math.abs(v)/tot)}));
+      expB.forEach((v,i)=>pts.push({x:x0+bw*i+bw/2, y:Y(v), label:labels[i], amt:v, color:expC, sub:T('expLabel2'), pct:pct(Math.abs(v)/tot)}));
+      balB.forEach((v,i)=>pts.push({x:x0+bw*i+bw/2, y:Y(v), label:labels[i], amt:v, color:balC, sub:T('kBal')+'（净）', pct:pct(Math.abs(v)/tot)}));
+    } else {
+      drawSeries(buckets, series);
+      buckets.forEach((v,i)=>pts.push({x:x0+bw*i+bw/2, y:Y(v), label:labels[i], amt:v, color:series, sub:kText, pct:pct(v/(buckets.reduce((a,b)=>a+b,0)||1))}));
+    }
+  }
+  ctx.fillStyle=muted; ctx.font='10px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='top';
+  const step=Math.max(1, Math.ceil(n/10));
+  labels.forEach((lb,i)=>{ if(i%step===0||i===n-1){ const x=x0+bw*i+bw/2; ctx.fillText(lb, x, yZero+6); } });
+  ldChartGeo = st.ctype==='bar' ? {kind:'bar', bars, bw, yZero} : {kind:'line', pts, bw, yZero};
+  // 图例：明确标注当前类型 / 收支与结余，杜绝混淆
+  if(wrap){
+    if(st.k==='bal'){
+      const ti=incB.reduce((a,b)=>a+b,0), te=expB.reduce((a,b)=>a+b,0);
+      wrap.innerHTML=
+        `<div class="lg"><span class="dot" style="background:${incC}"></span><span class="nm">${T('incLabel2')}</span><span class="camt">${fmt(ti)}</span></div>`+
+        `<div class="lg"><span class="dot" style="background:${expC}"></span><span class="nm">${T('expLabel2')}</span><span class="camt">${fmt(te)}</span></div>`+
+        `<div class="lg"><span class="dot" style="background:${balC}"></span><span class="nm">${T('kBal')}（净）</span><span class="camt">${fmt(ti-te)}</span></div>`+
+        (st.ctype==='bar'
+          ? `<div class="lg note">▮ 三柱=收入(绿)/支出(红)/净结余(蓝)</div>`
+          : `<div class="lg note">— 三线=收入(绿)↑/支出(红)↑/结余(蓝,可负)</div>`);
+    } else {
+      const tot=buckets.reduce((a,b)=>a+b,0);
+      wrap.innerHTML=`<div class="lg"><span class="dot" style="background:${series}"></span><span class="nm">${st.k==='inc'?T('incLabel2'):T('expLabel2')}</span><span class="camt">${fmt(tot)}</span></div>`;
+    }
+  }
+}
+
+/* 账本汇总趋势：跟随账本页正在查看的账本（仅查看，不影响记账） */
+function renderLdChart(){
+  const p=$('p-ledger'); if(!p || !p.classList.contains('act')) return;   // 面板隐藏时跳过
+  renderTrendChart(ldTrend, 'ldgChart', 'ldgChartLegend', currentLedger);
+}
+
+/* 趋势图点击查看明细：点击扇形 / 折线点 / 条形柱，弹出小框显示对应时段(或分类)+金额+类型 */
+function hideChartTip(){ const t=$('ldgChartTip'); if(t) t.hidden=true; }
+function hitTestGeo(px, py){
+  const g=ldChartGeo; if(!g) return null;
+  if(g.kind==='pie'){
+    const dx=px-g.cx, dy=py-g.cy; const dist=Math.hypot(dx,dy);
+    if(dist>g.r || dist<g.r*0.18) return null;   // 圆心为标签区(不命中)，环外不命中
+    let ang=Math.atan2(dy,dx); if(ang<0) ang+=Math.PI*2;
+    for(const s of g.slices){ if(ang>=s.a0 && ang<=s.a1) return s; }
+    return null;   // 落在扇区间留白缝 → 无命中
+  }
+  if(g.kind==='bar'){
+    let best=null, bd=1e9; for(const b of g.bars){ const c=b.x+b.w/2, d=Math.abs(px-c); if(d<bd){ bd=d; best=b; } }
+    return bd<=g.bw/2 ? best : null;   // 容差半周期，含并排柱之间的缝隙
+  }
+  if(g.kind==='line'){
+    let best=null, bd=1e9; for(const p of g.pts){ const d=Math.hypot(px-p.x, py-p.y); if(d<bd){ bd=d; best=p; } }
+    return bd<=14 ? best : null;
+  }
+  return null;
+}
+function showChartTip(clientX, clientY, info){
+  const tip=$('ldgChartTip'); if(!tip) return;
+  const amtCls = info.amt<0 ? 'exp' : (/支出/.test(info.sub)?'exp' : /收入/.test(info.sub)?'inc' : '');
+  tip.innerHTML=
+    `<div class="ctit"><span class="cdot" style="background:${info.color}"></span>${info.label}</div>`+
+    `<div class="camt2 ${amtCls}">${fmt(info.amt)}</div>`+
+    `<div class="csub">${info.sub}</div>`+
+    (info.pct?`<div class="csub">占比 ${info.pct}</div>`:'');
+  tip.hidden=false;
+  const pad=10, tw=tip.offsetWidth, th=tip.offsetHeight;
+  let x=clientX+14, y=clientY+14;
+  if(x+tw+pad>window.innerWidth) x=clientX-tw-pad;
+  if(y+th+pad>window.innerHeight) y=clientY-th-pad;
+  if(x<pad) x=pad; if(y<pad) y=pad;
+  tip.style.left=x+'px'; tip.style.top=y+'px';
+}
+function bindLdgChart(){
+  const cv=$('ldgChart'); if(!cv || cv._chartBound) return; cv._chartBound=true;
+  cv.style.cursor='pointer';
+  cv.addEventListener('click', e=>{
+    const info=hitTestGeo(e.offsetX, e.offsetY);
+    if(info){ showChartTip(e.clientX, e.clientY, info); e.stopPropagation(); }   // 命中则展示并阻止冒泡（避免被 document 监听关闭）
+    else hideChartTip();
+  });
+  document.addEventListener('click', hideChartTip);            // 点击图表外任意处关闭
+  window.addEventListener('scroll', hideChartTip, true);      // 滚动关闭，避免错位
+}
+bindLdgChart();
+
+/* 总预算进度条 */
+function renderBudget(){
+  const wrap=$('dzBudgetWrap');
+  const b=getBudget();
+  if(b<=0){
+    wrap.innerHTML=`<button class="ghost" id="budgetSetBtn">${T('budgetSet')}</button>`;
+    $('budgetSetBtn').onclick=showBudgetInput;
+    return;
+  }
+  const spent = curEntriesRaw().filter(e=>e.type==='exp'&&e.date&&e.date.slice(0,7)===curMonth()).reduce((s,e)=>s+e.amt,0);
+  const p=Math.min(1, b>0?spent/b:0);
+  const over=spent>b;
+  wrap.innerHTML=`
+    <div class="pgwrap">
+      <div class="pgbar"><div class="pgfill" style="width:${(p*100).toFixed(0)}%;background:${over?'var(--exp)':'linear-gradient(135deg,var(--primary),var(--primary2))'}"></div></div>
+      <div class="pglabel">${T('monthOver')} ${fmt(spent)} / ${T('monthBudget')} ${fmt(b)}${over?' · '+T('overBud'):''}</div>
+    </div>
+    <div class="srow" style="margin-top:calc(8*var(--u))">
+      <button id="budgetEditBtn">${T('budgetEdit')}</button>
+      <button id="budgetClearBtn">${T('budgetClear')}</button>
+    </div>`;
+  $('budgetEditBtn').onclick=showBudgetInput;
+  $('budgetClearBtn').onclick=()=>{ saveBudget(0); renderBudget(); };
+}
+function showBudgetInput(){
+  const wrap=$('dzBudgetWrap');
+  wrap.innerHTML=`<div class="field" style="margin:0"><label>${T('monthBudget')}</label><input id="budgetInput" type="number" inputmode="decimal" step="0.01" placeholder="5000"><span class="u">${T('unit')}</span></div>
+    <button class="ghost" id="budgetOk" style="margin-top:calc(8*var(--u))">${T('btnOk')}</button>`;
+  const bi=$('budgetInput'); bi.addEventListener('input', e=>clip2(e.target));
+  $('budgetOk').onclick=()=>{ const v=parseFloat($('budgetInput').value); saveBudget(isFinite(v)&&v>0?v:0); renderBudget(); };
+}
+
+/* ============ 2. 攒钱小目标（表单式存入 + 进度条） ============ */
+/* saveState：target=当前轮目标金额；deposits=当前轮存入；rounds=已完成历史轮次（开启下一轮时归档） */
+let saveState = lsGet('save_state', {target:0, deposits:[], rounds:[]});
+if(!Array.isArray(saveState.rounds)) saveState.rounds=[];
+if(!Array.isArray(saveState.deposits)) saveState.deposits=[];
+let deposits = saveState.deposits;
+let sDate = todayStr();
+function persistSave(){ saveState.deposits=deposits; lsSet('save_state', saveState); }
+/* 历史轮次 + 当前轮的全部存入（日历/导出用，保证历史记录不丢） */
+function allDeps(){
+  let arr=[]; saveState.rounds.forEach(r=>{ (r.deposits||[]).forEach(d=>arr.push(d)); });
+  return arr.concat(deposits);
+}
+/* 全局序号 → 实际所在容器（历史轮 / 当前轮），供日历改删定位 */
+function depContainer(i){
+  for(const r of saveState.rounds){ const L=r.deposits||[]; if(i<L.length) return {list:L, k:i}; i-=L.length; }
+  return {list:deposits, k:i};
+}
+setDateVal('sDate', sDate);
+$('sDate').addEventListener('input', e=>{
+  if(e.target.value && e.target.value > todayStr()){ toast('日期不能晚于今天，最多只能选到今天'); e.target.value=todayStr(); }
+  sDate=e.target.value||todayStr(); renderDep();
+});
+enforcePastDate($('sDate'));
+
+/* —— 目标金额管理：进入页面显示「设置目标金额」按钮 → 输入后点确定；
+      设置后可修改 / 删除；不设置目标也可以直接存入 —— */
+let sTargetEditing=false;   // 是否处于目标金额输入态
+function renderTargetBox(){
+  const box=$('sTargetBox'); if(!box) return;
+  const t=round2(Number(saveState.target)||0);
+  if(sTargetEditing){
+    box.innerHTML=`<div class="field"><label>${T('lblTarget')}</label>
+      <input id="s_target" type="number" inputmode="decimal" step="0.01" placeholder="如 50000" value="${t>0?t:''}">
+      <span class="u">${T('unit')}</span></div>
+      <div class="srow"><button id="sTargetOk" type="button">${T('btnOk')}</button><button id="sTargetCancel" type="button" class="ghost">${T('cancel')}</button></div>`;
+    $('sTargetOk').onclick=()=>{
+      clip2($('s_target'));
+      const v=round2(parseFloat($('s_target').value)||0);
+      if(!(v>0)){ toast(T('targetNeed')); return; }
+      saveState.target=v; sTargetEditing=false; persistSave(); renderTargetBox(); computeSave();
+      toast(T('targetSetOk')+' '+fmt(v));
+    };
+    $('sTargetCancel').onclick=()=>{ sTargetEditing=false; renderTargetBox(); };
+    $('s_target').addEventListener('input', ()=>clip2($('s_target')));
+    setTimeout(()=>{ try{ $('s_target').focus(); }catch(e){} },0);
+  } else if(t>0){
+    box.innerHTML=`<div class="field"><label>${T('lblTarget')}</label>
+      <input type="text" readonly value="${fmt(t)}" style="flex:1;background:transparent;border:none;font-weight:700;color:var(--primary)">
+      </div>
+      <div class="srow"><button id="sTargetEdit" type="button">${T('targetModify')}</button><button id="sTargetDel" type="button" class="ghost">${T('targetDel')}</button></div>`;
+    $('sTargetEdit').onclick=()=>{ sTargetEditing=true; renderTargetBox(); };
+    $('sTargetDel').onclick=()=>confirmDel(T('confirmTitle'), ()=>{
+      saveState.target=0; sTargetEditing=false; persistSave(); renderTargetBox(); computeSave(); toast(T('targetDelOk'));
+    });
+  } else {
+    box.innerHTML=`<button class="ghost" id="sTargetSetBtn" type="button">🎯 ${T('setTargetBtn')}</button>
+      <div class="tips" style="padding:4px 0 0">${T('noTargetTip')}</div>`;
+    $('sTargetSetBtn').onclick=()=>{ sTargetEditing=true; renderTargetBox(); };
+  }
+}
+function renderDep(){
+  const t=sDate;
+  const rows=deposits.map((d,i)=>({d,i})).filter(o=>o.d.date===t);
+  $('depList').innerHTML = rows.length
+    ? rows.map(o=>`<div class="dzitem"><span class="arr inc">↑</span>
+        <span class="cn">${esc(T('saveWord'))}</span>
+        <span class="camt inc">${fmt(o.d.amt)}</span>
+        <button class="cedit" data-i="${o.i}" title="修改">改</button>
+        <button class="cdel" data-i="${o.i}">×</button></div>`).join('')
+    : '<div class="tips" style="padding:6px 0">'+T('noRec')+'</div>';
+}
+/* 编辑模式开关：切换「+ 添加一笔存入」↔「保存修改」并显示/隐藏取消按钮 */
+let depEditIdx=null;   // 编辑中的存入索引（null = 新增模式）
+function setDepEditMode(on){
+  const add=$('depAdd'), canc=$('depEditCancel');
+  if(on){ add.dataset.i='saveEdit'; add.textContent=T('saveEdit'); canc.style.display=''; }
+  else  { add.dataset.i='addSave';  add.textContent=T('addSave'); canc.style.display='none'; $('sAmt').value=''; depEditIdx=null; }
+}
+/* 把某笔存入载入表单，进入编辑模式（可再改日期/金额） */
+function loadDepForEdit(i){
+  const d=deposits[i]; if(!d) return;
+  depEditIdx=i;
+  sDate=d.date||todayStr(); setDateVal('sDate', sDate);
+  $('sAmt').value=d.amt;
+  setDepEditMode(true);
+  $('sAmt').focus();
+  if($('p-save').scrollIntoView) $('p-save').scrollIntoView({behavior:'smooth',block:'start'});
+}
+$('depEditCancel').onclick=()=>{ setDepEditMode(false); renderDep(); };
+$('sAmt').addEventListener('input', e=>clip2(e.target));   // 存入金额实时限制两位小数
+$('depAdd').onclick=()=>{
+  clip2($('sAmt'));
+  const raw=parseFloat($('sAmt').value);
+  if(!isFinite(raw)||raw<=0){ toast('请输入有效金额'); return; }
+  const amt=round2(raw);                       // 严格两位小数，不超出
+  if(depEditIdx!==null && deposits[depEditIdx]){           // 修改模式：更新原存入
+    deposits[depEditIdx]={date:sDate, amt};
+    toast(`已修改存入 ${fmt(amt)}（${sDate}）`);
+  } else {                                                 // 新增模式：追加
+    deposits.push({date:sDate, amt});
+    toast(`已添加存入 ${fmt(amt)}（${sDate}）`);
+  }
+  setDepEditMode(false);
+  persistSave(); renderDep(); computeSave();
+};
+/* 存入金额修改统一走「改」按钮载入表单（与点滴账一致，不再用行内输入框） */
+$('depList').addEventListener('click', e=>{
+  if(e.target.classList.contains('cedit')){ loadDepForEdit(+e.target.dataset.i); return; }
+  if(e.target.classList.contains('cdel')){ const i=+e.target.dataset.i; confirmDel(T('confirmTitle'), ()=>{ if(depEditIdx===i) setDepEditMode(false); deposits.splice(i,1); persistSave(); renderDep(); computeSave(); }); }
+});
+$('saveClear').onclick=()=>{ confirmDel(T('confirmTitle'), ()=>{ deposits=[]; persistSave(); renderDep(); computeSave(); toast(T('clear')); }); };
+function computeSave(){
+  const target=round2(Number(saveState.target)||0);
+  const total=deposits.reduce((s,d)=>s+(parseFloat(d.amt)||0),0);
+  let html='';
+  if(!(target>0)){
+    // 未设置目标：也可以直接存入，仅展示累计
+    html=`<div class="stats">
+        <div class="stat inc"><div class="k">${T('saveWord')}</div><div class="v">${fmt(total)}</div></div>
+        <div class="stat"><div class="k">${T('todayDep')}</div><div class="v">${deposits.length}</div></div>
+      </div>
+      <div class="tips"><div>${T('noTargetTip')}</div></div>`;
+  } else {
+    const remaining=Math.max(0,target-total);
+    const p=Math.min(1, target>0 ? total/target : 0);
+    const pTxt=(p*100).toFixed(0)+'%';
+    const done=total>=target;
+    html=`<div class="stats">
+      <div class="stat"><div class="k">${T('lblTarget')}</div><div class="v">${fmt(target)}</div></div>
+      <div class="stat inc"><div class="k">${T('saveWord')}</div><div class="v">${fmt(total)}</div></div>
+      <div class="stat exp"><div class="k">还差</div><div class="v">${fmt(remaining)}</div></div>
+    </div>
+    <div class="pgwrap">
+      <div class="pgbar"><div class="pgfill" style="width:${pTxt}"></div></div>
+      <div class="pglabel">已完成 ${pTxt}${done?' · 目标达成':''}</div>
+    </div>`;
+    if(done){
+      // 已达成目标：可选择是否开启下一轮（开启后此轮存入历史记录）
+      html+=`<div class="achv">🎉 ${T('achievedTitle')}</div>
+        <div class="srow"><button id="nextRoundBtn" type="button">🔄 ${T('nextRound')}</button><button id="nextRoundNo" type="button" class="ghost">${T('notNow')}</button></div>`;
+    } else if(deposits.length===0) html+='<div class="tips"><div>添加第一笔存入，开始积累吧。</div></div>';
+    else html+=`<div class="tips"><div>已存 ${deposits.length} 笔，保持节奏，离目标越来越近。</div></div>`;
+  }
+  // 历史轮次：开启下一轮后，上一轮（含全部存入）归档至此
+  if(saveState.rounds.length){
+    html+=`<div class="listhdr">${T('roundHist')}</div>`+saveState.rounds.map((r,i)=>
+      `<div class="dzitem"><span class="arr inc">✓</span>
+        <span class="cmeta"><span class="cn">${T('roundHist')} ${i+1} · ${T('lblTarget')} ${fmt(r.target)}</span>
+        <span class="csrc">${T('saveWord')} ${fmt(r.total)} · ${esc(r.finishedAt||'')}</span></span></div>`).join('');
+  }
+  $('sRes').innerHTML=html;
+  const nb=$('nextRoundBtn'); if(nb) nb.onclick=startNextRound;
+  const nn=$('nextRoundNo'); if(nn) nn.onclick=()=>toast('需要时可随时点「'+T('nextRound')+'」');
+}
+/* 达成后开启下一轮：此轮全部存入归档进历史记录，目标清零、重新设置 */
+function startNextRound(){
+  const total=round2(deposits.reduce((s,d)=>s+(parseFloat(d.amt)||0),0));
+  saveState.rounds.push({target:round2(Number(saveState.target)||0), total, finishedAt:todayStr(), deposits});
+  deposits=[]; saveState.deposits=deposits; saveState.target=0;
+  persistSave(); renderTargetBox(); renderDep(); computeSave();
+  toast('已开启新一轮攒钱，上一轮已存入历史记录');
+}
+$('depListHdr').textContent=T('todayDep');
+
+/* ============ 3. 智能问答（大模型） ============ */
+/* 智能问答接入：OpenAI 兼容模式（DashScope / compatible-mode/v1） */
+const AI={
+  host:'https://ws-vxnt1xnjx9uphkk6.cn-beijing.maas.aliyuncs.com',   // API Host
+  baseUrl:'https://ws-vxnt1xnjx9uphkk6.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions',
+  apiKey:'',
+  model:'qwen-plus',
+  timeout:60000
+};
+/* 模型不可用时按顺序回退，保证「提问必有回应」 */
+const AI_FALLBACK=['qwen-plus','qwen3.8-flash','qwen-turbo','deepseek-v4-flash','glm-5.3'];
+/* 实际生效的密钥 / 模型：优先用设置里保存的本机值，否则用内置默认值 */
+function aiKey(){ const k=(lsGet('dz_ai_key','')||'').trim(); return k || AI.apiKey; }
+function aiModel(){ const m=(lsGet('dz_ai_model','')||'').trim(); return m || AI.model; }
+function aiCandidates(){ const m=aiModel(); return [m].concat(AI_FALLBACK.filter(x=>x!==m)); }
+function initAiUI(){
+  const el=$('aiKeyInput');
+  if(el){
+    el.value=(lsGet('dz_ai_key','')||'').trim();
+    el.placeholder='••••••••';   // 不回显任何密钥字符
+    const save=$('aiKeySave'), clr=$('aiKeyClear');
+    if(save) save.onclick=()=>{ const v=el.value.trim(); lsSet('dz_ai_key',v); toast(v?'AI 密钥已保存到本机':'已清除，改用内置密钥'); };
+    if(clr) clr.onclick=()=>{ el.value=''; lsSet('dz_ai_key',''); toast('已清除，改用内置密钥'); };
+  }
+  const mi=$('aiModelInput');
+  if(mi){
+    mi.value=(lsGet('dz_ai_model','')||'').trim();
+    mi.placeholder=AI.model;   // 模型名非敏感，可直接提示默认值
+    const ms=$('aiModelSave'), mc=$('aiModelClear'), ml=$('aiModelList');
+    if(ms) ms.onclick=()=>{ const v=mi.value.trim(); lsSet('dz_ai_model',v); toast(v?'模型已设为 '+v:'已恢复内置模型 '+AI.model); };
+    if(mc) mc.onclick=()=>{ mi.value=''; lsSet('dz_ai_model',''); toast('已恢复内置模型 '+AI.model); };
+    if(ml) ml.onclick=async()=>{   // 一键拉取该密钥可用模型清单
+      ml.disabled=true; ml.textContent='查询中…';
+      try{
+        const r=await fetch(AI.host+'/compatible-mode/v1/models',{headers:{'Authorization':'Bearer '+aiKey()}});
+        const j=await r.json(); const ids=(j.data||[]).map(m=>m.id).filter(Boolean);
+        if(!ids.length) throw new Error('未返回模型');
+        $('aiModelTip').textContent='可用模型（共 '+ids.length+' 个）：'+ids.slice(0,24).join('、')+(ids.length>24?' …':'');
+      }catch(e){ $('aiModelTip').textContent='查询失败：'+e.message; }
+      ml.disabled=false; ml.textContent='查询可用模型';
+    };
+  }
+}
+initAiUI();
+const AI_SYS='你是友好、务实的家庭理财助手，擅长预算规划、节流攒钱、消费分类与装修控预算。'
+  +'请用简洁中文给出可操作建议，语气亲切；只谈合法合规的理财方法，不提供借贷、投机或违规建议。';
+function md(text){
+  return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\n/g,'<br>');
+}
+/* —— 会话存储：多会话持久化，往期对话可查看 / 继续 / 删除 —— */
+let aiSessions = lsGet('dz_ai_sessions', []);
+if(!Array.isArray(aiSessions)) aiSessions=[];
+let aiCurId = lsGet('dz_ai_cur', '');
+function aiCur(){ return aiSessions.find(s=>s.id===aiCurId); }
+function persistAI(){ lsSet('dz_ai_sessions',aiSessions); lsSet('dz_ai_cur',aiCurId); }
+function newSession(){
+  const sn={id:'S'+Date.now()+Math.random().toString(36).slice(2,6), title:'', createdAt:Date.now(), updatedAt:Date.now(), msgs:[]};
+  aiSessions.unshift(sn);
+  if(aiSessions.length>50) aiSessions.length=50;   // 最多保留 50 个会话，超出删最旧
+  aiCurId=sn.id; persistAI(); return sn;
+}
+function ensureSession(){ if(!aiCur()) newSession(); return aiCur(); }
+function fmtTs(ts){ const d=new Date(ts), n=new Date();
+  const hm=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  return (d.toDateString()===n.toDateString())?hm:(String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+' '+hm); }
+
+/* —— 长记忆：system 提示携带「往期对话要点」（最近一个其他会话的问题 + 结论），跨会话延续语境 —— */
+function memoryText(){
+  const others=aiSessions.filter(s=>s.id!==aiCurId&&s.msgs.some(m=>m.role==='user')).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  if(!others.length) return '';
+  const sn=others[0];
+  const qs=sn.msgs.filter(m=>m.role==='user').slice(0,3).map(m=>'· '+m.content.slice(0,60));
+  const la=[...sn.msgs].reverse().find(m=>m.role==='assistant'&&m.content);
+  return '\n\n【长记忆 · 往期对话要点】用户之前聊过「'+(sn.title||'(未命名)')+'」：\n'+qs.join('\n')
+    +(la?('\n你当时的结论（节选）：'+la.content.replace(/\s+/g,' ').slice(0,180)):'')
+    +'\n若与本轮话题相关可自然衔接；无关则忽略，不要主动复述。';
+}
+/* 上下文：系统提示 + 本会话最近 24 条消息（多轮对话记忆） */
+function buildContext(){
+  const msgs=[{role:'system',content:AI_SYS+memoryText()}];
+  aiCur().msgs.filter(m=>!m.typing&&m.content&&(m.role==='user'||m.role==='assistant')).slice(-24).forEach(m=>msgs.push({role:m.role,content:m.content}));
+  return msgs;
+}
+
+/* —— 渲染聊天流 —— */
+/* 标题栏右侧按钮组：往期对话（带会话数角标）/ 新对话 */
+function renderAiActs(){
+  const box=$('aiActs'); if(!box) return;
+  const n=aiSessions.length;
+  box.innerHTML=
+    '<button class="aibtn ghost" id="aiHistBtn" type="button"><span class="ico">🕘</span>'+T('aiHistory')
+      +(n?'<span class="badge">'+n+'</span>':'')+'</button>'
+    +'<button class="aibtn ghost" id="aiNew" type="button"><span class="ico">✚</span>'+T('btnNew')+'</button>';
+  $('aiHistBtn').onclick=()=>{
+    if(!aiSessions.length){ toast('还没有往期对话，发一条消息就会自动保存'); return; }
+    renderAiHist(); $('aiHistModal').style.display='flex';
+  };
+  $('aiNew').onclick=()=>startNewChat();     // 包一层：否则 event 会被当成 force 参数，二次确认被跳过
+}
+/* 「开启新对话」专属确认弹窗：等宽双键 + 底部安全提示，防误触 */
+let ncCb=null;
+function askNewChat(cb){ ncCb=cb; $('ncModal').style.display='flex'; }
+function ncCancel(){ $('ncModal').style.display='none'; ncCb=null; }
+$('ncCancel').onclick=ncCancel;
+$('ncModal').onclick=e=>{ if(e.target===$('ncModal')) ncCancel(); };
+$('ncOk').onclick=()=>{ $('ncModal').style.display='none'; const f=ncCb; ncCb=null; if(f) f(); };
+
+function startNewChat(force){
+  const c=aiCur();
+  if(!c||!c.msgs.length){ toast(T('aiNewNowEmpty')); if($('aiInput')) $('aiInput').focus(); return; }
+  if(!force){                                  // 防误触：先二次确认
+    askNewChat(()=>{ newSession(); persistAI(); renderChat(); $('aiInput').focus(); toast(T('aiNewDone')); });
+    return;
+  }
+  newSession(); persistAI(); renderChat(); $('aiInput').focus(); toast(T('aiNewDone'));
+}
+function renderChat(){
+  renderAiActs();                     // 按钮随会话数/语言同步刷新
+  const box=$('chatBox'); if(!box) return;
+  const ip=$('aiInput'); if(ip) ip.placeholder=T('aiPlaceholder');
+  const cur=aiCur();
+  const sg=$('aiChips'); if(sg) sg.style.display=(cur&&cur.msgs.length)?'none':'';
+  if(!cur||!cur.msgs.length){
+    box.innerHTML='<div class="msg ai">'+esc(T('aiEmptyTip'))+'</div>';
+  } else {
+    box.innerHTML=cur.msgs.map(m=>{
+      if(m.typing) return '<div class="msg ai"><span class="typing"><span></span><span></span><span></span></span></div>';
+      if(m.role==='error') return '<div class="msg errm">'+esc(m.content)+'</div>';
+      if(m.role==='user') return '<div class="msg user">'+esc(m.content)+'<span class="mts">'+fmtTs(m.ts)+'</span></div>';
+      return '<div class="msg ai">'+md(m.content)+'<span class="mts">'+fmtTs(m.ts)+'</span></div>';
+    }).join('');
+  }
+  box.scrollTop=box.scrollHeight;   // 跟随最新消息
+}
+
+/* —— 发送：多轮上下文 + 模型回退 —— */
+let aiBusy=false;
+async function sendChat(){
+  if(aiBusy) return;
+  const q=$('aiInput').value.trim(); if(!q) return;
+  const k=aiKey();
+  if(!k){                                                        // 线上版：首次使用让用户自填密钥，只存本机
+    const v=prompt('首次使用请粘贴你的 AI 密钥（只保存在本机浏览器，不会上传）：');
+    if(v&&v.trim()){ lsSet('dz_ai_key',v.trim()); toast('密钥已保存到本机，正在发送…'); return sendChat(); }
+    toast('未配置密钥，无法提问'); return;
+  }
+  aiBusy=true; $('aiSend').disabled=true;
+  const cur=ensureSession();
+  if(!cur.title) cur.title=q.slice(0,24);        // 会话标题=第一句提问
+  cur.msgs.push({role:'user',content:q,ts:Date.now()});
+  const tm={role:'assistant',content:'',ts:Date.now(),typing:true};
+  cur.msgs.push(tm); cur.updatedAt=Date.now();
+  persistAI(); $('aiInput').value=''; autosizeAi(); renderChat();
+  let lastErr='';
+  for(const model of aiCandidates()){
+    try{
+      const ctrl=new AbortController(); const tid=setTimeout(()=>ctrl.abort(),AI.timeout);
+      const r=await fetch(AI.baseUrl,{method:'POST',signal:ctrl.signal,
+        headers:{'content-type':'application/json','Authorization':'Bearer '+k},
+        body:JSON.stringify({model,messages:buildContext(),temperature:0.7,max_tokens:900})});
+      clearTimeout(tid);
+      if(!r.ok){
+        const e=(await r.text()).slice(0,200);
+        lastErr='接口返回 '+r.status+'：'+e;
+        if(r.status===401||r.status===403) break;                       // 密钥/权限问题不重试
+        if(/model|模型/i.test(e)) continue;                             // 模型不可用 → 换下一个候选
+        break;
+      }
+      const j=await r.json();
+      const ans=(j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content)||'（暂无内容）';
+      tm.content=ans+(model!==aiModel()?'\n\n（已自动切换到可用模型：'+model+'）':'');
+      tm.typing=false; cur.updatedAt=Date.now(); persistAI(); renderChat();
+      aiBusy=false; $('aiSend').disabled=false; return;
+    }catch(err){
+      lastErr='调用失败：'+(err.name==='AbortError'?'请求超时':err.message)
+        +'。浏览器直连可能受跨域(CORS)限制，建议本地起服务或走后端代理。';
+      if(err.name==='AbortError') break;
+    }
+  }
+  const i=cur.msgs.indexOf(tm); if(i>=0) cur.msgs.splice(i,1);   // 移除“思考中”气泡
+  cur.msgs.push({role:'error',content:lastErr||'调用失败',ts:Date.now()});
+  persistAI(); renderChat(); aiBusy=false; $('aiSend').disabled=false;
+}
+
+/* —— 输入框：自动增高 + 回车发送（Shift+Enter 换行） —— */
+function autosizeAi(){ const el=$('aiInput'); if(!el) return; el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,110)+'px'; }
+$('aiInput').addEventListener('input',autosizeAi);
+$('aiInput').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendChat(); } });
+$('aiSend').onclick=sendChat;
+$('aiChips').querySelectorAll('button').forEach(b=>b.onclick=()=>{ $('aiInput').value=b.textContent; autosizeAi(); $('aiInput').focus(); });
+
+/* —— 往期对话历史弹窗：点击载入继续聊，可删除 —— */
+function renderAiHist(){
+  const box=$('aiHistList'); if(!box) return;
+  const list=[...aiSessions].sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  box.innerHTML=list.length?list.map(sn=>{
+    const cnt=sn.msgs.filter(m=>m.role==='user').length;
+    const lastA=[...sn.msgs].reverse().find(m=>m.role==='assistant'&&m.content);
+    const prev=lastA?lastA.content.replace(/\s+/g,' ').slice(0,50):'';
+    return '<div class="aih-row" data-id="'+sn.id+'">'
+      +'<span class="aih-main"><span class="aih-tit">'+esc(sn.title||T('aiHistory'))+'</span>'
+      +'<span class="aih-sub">'+esc(fmtTs(sn.updatedAt||sn.createdAt))+' · '+cnt+' 问</span>'
+      +(prev?'<span class="aih-prev">'+esc(prev)+'…</span>':'')+'</span>'
+      +(sn.id===aiCurId?'<span class="aih-cur">'+T('aihCur')+'</span>':'')
+      +'<button class="aih-del" data-del="'+sn.id+'" title="'+T('delete')+'">×</button></div>';
+  }).join('')
+    :'<div class="tips">'+T('aiHistEmpty')+'</div>';
+}
+$('aiHistClose').onclick=()=>{ $('aiHistModal').style.display='none'; };
+$('aiHistNew').onclick=()=>{ startNewChat(); $('aiHistModal').style.display='none'; };
+$('aiHistModal').onclick=e=>{ if(e.target===$('aiHistModal')) $('aiHistModal').style.display='none'; };
+$('aiHistList').addEventListener('click',e=>{
+  const del=e.target.closest('[data-del]');
+  if(del){ e.stopPropagation();
+    confirmDel(T('confirmTitle'), ()=>{
+      aiSessions=aiSessions.filter(s=>s.id!==del.dataset.del);
+      if(aiCurId===del.dataset.del){ aiCurId=aiSessions.length?aiSessions[0].id:''; }
+      persistAI(); renderAiHist(); renderChat();
+    }, '删除这条往期对话？其聊天记录将无法恢复。');
+    return; }
+  const row=e.target.closest('.aih-row');
+  if(row){ aiCurId=row.dataset.id; persistAI(); $('aiHistModal').style.display='none'; renderChat(); }
+});
+renderChat();
+
+/* ============ 删除确认 ============ */
+let confCb=null;
+/* 通用确认弹窗：标题、正文、确认键文案均可自定义（防误触用） */
+function confAsk(title, msg, okText, cb){
+  $('confTitle').textContent=title; $('confText').textContent=msg; $('confOk').textContent=okText;
+  confCb=cb; $('confModal').style.display='flex';
+}
+function confirmDel(title, cb, msg){ confAsk(title||T('confirmTitle'), msg||'确定要删除这条记录吗？此操作无法撤销。', T('confirmDel'), cb); }
+$('confClose').onclick=()=>{ $('confModal').style.display='none'; confCb=null; };
+$('confCancel').onclick=()=>{ $('confModal').style.display='none'; confCb=null; };
+$('confOk').onclick=()=>{ $('confModal').style.display='none'; const f=confCb; confCb=null; if(f) f(); };
+$('confModal').onclick=e=>{ if(e.target===$('confModal')){ $('confModal').style.display='none'; confCb=null; } };
+
+/* ============ 日历历史 ============ */
+let calKind='dz', calYear, calMonth, calSelDate=null, calCat='';
+function calData(ds){
+  let recs = calKind==='dz' ? entries.filter(e=>e.lid===currentLedger && e.date===ds) : allDeps().filter(d=>d.date===ds);
+  if(calKind==='dz' && calCat) recs = recs.filter(e=>e.cat===calCat);
+  return recs;
+}
+function buildCal(){
+  const y=calYear,m=calMonth;
+  const startDow=new Date(y,m,1).getDay();
+  const days=new Date(y,m+1,0).getDate();
+  let cells='';
+  for(let i=0;i<startDow;i++) cells+='<div class="cal-cell empty"></div>';
+  for(let d=1;d<=days;d++){
+    const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const has=calData(ds).length>0;
+    const sel=ds===calSelDate?' sel':'';
+    cells+=`<button class="cal-cell${has?' has':''}${sel}" data-d="${ds}">${d}</button>`;
+  }
+  $('calGrid').innerHTML=cells;
+}
+function renderCalDetail(ds){
+  const box=$('calDetail');
+  if(!ds){ box.innerHTML='<div class="tips">'+T('pickDay')+'</div>'; return; }
+  const recs=calData(ds);
+  if(!recs.length){ box.innerHTML=`<div class="dh">${ds}</div><div class="tips">${T('noRec')}</div>`; return; }
+  const rows=recs.map((r)=>{
+    if(calKind==='dz'){
+      const ri=entries.indexOf(r);
+      return `<div class="cal-row"><span class="arr ${r.type==='inc'?'inc':'exp'}">${r.type==='inc'?'↑':'↓'}</span>
+        <span class="cmeta"><span class="cn">${esc(r.cat)}</span>${r.src?`<span class="csrc">${esc(r.src)}</span>`:''}</span>
+        <input class="camtInput ${r.type==='inc'?'inc':'exp'}" data-i="${ri}" type="number" step="0.01" value="${esc(r.amt)}">
+        <button class="calDel" data-i="${ri}">${T('confirmDel')}</button></div>`;
+    } else {
+      const ri=allDeps().indexOf(r);
+      return `<div class="cal-row"><span class="arr inc">↑</span><span class="cn">${esc(T('saveWord'))}</span>
+        <input class="camtInput inc" data-i="${ri}" type="number" step="0.01" value="${esc(r.amt)}">
+        <button class="calDel" data-i="${ri}">${T('confirmDel')}</button></div>`;
+    }
+  }).join('');
+  box.innerHTML=`<div class="dh">${ds}</div>${rows}<button class="ghost" id="calDelDay" style="margin-top:calc(10*var(--u))">${T('delDay')}</button>`;
+}
+function openCalendar(kind){
+  calKind=kind; calSelDate=null; calCat='';
+  const t=new Date(); calYear=t.getFullYear(); calMonth=t.getMonth();
+  $('calTitle').textContent = kind==='dz'?T('calDz'):T('calSave');
+  if(kind==='dz'){ $('calCatLabel').style.display=''; $('calCatSel').style.display=''; }
+  else { $('calCatLabel').style.display='none'; $('calCatSel').style.display='none'; }
+  buildCal(); renderCalDetail(null); populateCalSelectors(); populateCalCat();
+  $('calModal').style.display='flex';
+}
+function populateCalSelectors(){
+  const ysel=$('calYearSel'), msel=$('calMonthSel');
+  const cur=new Date().getFullYear();
+  let minY=cur-10; // 年份下拉：当前往前 10 年
+  entries.concat(allDeps()).forEach(r=>{ const y=parseInt((r.date||'').slice(0,4)); if(y&&y<minY) minY=y; });
+  // 上限放大到当前 +5 年，可翻到 2028/2029 等未来年份
+  let h=''; for(let y=minY;y<=cur+5;y++) h+=`<option value="${y}" ${y===calYear?'selected':''}>${y}年</option>`;
+  ysel.innerHTML=h;
+  h=''; for(let m=1;m<=12;m++) h+=`<option value="${m-1}" ${m-1===calMonth?'selected':''}>${m}月</option>`;
+  msel.innerHTML=h;
+}
+function populateCalCat(){
+  $('calCatSel').innerHTML='<option value="">'+T('allCat')+'</option>'
+    + EXP_CATS.concat(INC_CATS).map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+}
+function syncCalSel(){ $('calYearSel').value=calYear; $('calMonthSel').value=calMonth; }
+function afterCalChange(){
+  if(calKind==='dz') lsSet('dz_entries',entries); else persistSave();
+  buildCal(); renderCalDetail(calSelDate); renderDz(); renderBudget(); renderDep(); computeSave();
+}
+/* 导出：屏显弹窗，不再复制到剪贴板 */
+function exportMonth(){
+  const ym=`${calYear}-${String(calMonth+1).padStart(2,'0')}`;
+  let lines=[];
+  if(calKind==='dz'){
+    const recs=entries.filter(e=>e.lid===currentLedger && e.date&&e.date.slice(0,7)===ym && (!calCat||e.cat===calCat));
+    const inc=recs.filter(e=>e.type==='inc').reduce((s,e)=>s+e.amt,0);
+    const exp=recs.filter(e=>e.type==='exp').reduce((s,e)=>s+e.amt,0);
+    lines.push(`${T('calDz')}（${ym}${calCat?' · '+calCat:''}）`);
+    lines.push('————————————');
+    lines.push(`${T('kInc')}：${fmt(inc)}`);
+    lines.push(`${T('kExp')}：${fmt(exp)}`);
+    lines.push(`${T('kBal')}：${fmt(inc-exp)}`);
+    const bycat={}; recs.filter(e=>e.type==='exp').forEach(e=>bycat[e.cat]=(bycat[e.cat]||0)+e.amt);
+    const cats=Object.keys(bycat).sort((a,b)=>bycat[b]-bycat[a]);
+    if(cats.length){ lines.push(''); lines.push(`${T('kExp')}分类占比：`); cats.forEach(c=>lines.push(`  ${c}：${fmt(bycat[c])}（${pct(bycat[c]/exp)}）`)); }
+    lines.push(''); lines.push('明细：');
+    recs.sort((a,b)=>a.date.localeCompare(b.date)).forEach(e=>{
+      lines.push(`  ${e.date} ${e.type==='inc'?T('incLabel2'):T('expLabel2')}·${e.cat}${e.src?'（'+e.src+'）':''} ${fmt(e.amt)}`);
+    });
+    lines.push(''); lines.push(`共 ${recs.length} 条记录`);
+  } else {
+    const recs=allDeps().filter(d=>d.date&&d.date.slice(0,7)===ym);
+    const amt=recs.reduce((s,d)=>s+(parseFloat(d.amt)||0),0);
+    lines.push(`${T('calSave')}（${ym}）`);
+    lines.push('————————————');
+    lines.push(`${T('todayDep')}：${recs.length} 笔`);
+    lines.push(`${T('saveWord')}合计：${fmt(amt)}`);
+    const t=round2(Number(saveState.target)||0); if(t>0) lines.push(`${T('progTitle')}：${pct(amt/t)}`);
+  }
+  $('expText').textContent=lines.join('\n');
+  $('expModal').style.display='flex';
+}
+$('dzHistoryBtn').onclick=()=>openCalendar('dz');
+$('saveHistoryBtn').onclick=()=>openCalendar('save');
+$('calYearSel').onchange=e=>{ calYear=+e.target.value; buildCal(); };
+$('calMonthSel').onchange=e=>{ calMonth=+e.target.value; buildCal(); };
+$('calCatSel').onchange=e=>{ calCat=e.target.value; buildCal(); renderCalDetail(calSelDate); };
+$('calExportBtn').onclick=exportMonth;
+$('calPrev').onclick=()=>{ calMonth--; if(calMonth<0){calMonth=11;calYear--;} buildCal(); syncCalSel(); };
+$('calNext').onclick=()=>{ calMonth++; if(calMonth>11){calMonth=0;calYear++;} buildCal(); syncCalSel(); };
+$('calGrid').addEventListener('click',e=>{ const b=e.target.closest('.cal-cell'); if(!b||!b.dataset.d) return; calSelDate=b.dataset.d; buildCal(); renderCalDetail(calSelDate); });
+$('calDetail').addEventListener('input',e=>{ if(e.target.classList.contains('camtInput')){ const i=+e.target.dataset.i; const v=round2(parseFloat(e.target.value)||0); if(calKind==='dz') entries[i].amt=v; else { const c=depContainer(i); c.list[c.k].amt=v; } if(calKind==='dz') lsSet('dz_entries',entries); else persistSave(); } });
+$('calDetail').addEventListener('change',e=>{ if(e.target.classList.contains('camtInput')){ afterCalChange(); } });
+$('calDetail').addEventListener('click',e=>{
+  if(e.target.classList.contains('calDel')){ const i=+e.target.dataset.i; confirmDel(T('confirmTitle'), ()=>{
+    if(calKind==='dz') entries.splice(i,1);
+    else { const c=depContainer(i); c.list.splice(c.k,1); persistSave(); }
+    afterCalChange(); }); }
+  if(e.target.id==='calDelDay'&&calSelDate){ confirmDel(T('confirmTitle'), ()=>{
+    if(calKind==='dz') entries=entries.filter(x=>x.date!==calSelDate);
+    else { saveState.rounds.forEach(r=>{ r.deposits=(r.deposits||[]).filter(x=>x.date!==calSelDate); }); deposits=deposits.filter(x=>x.date!==calSelDate); saveState.deposits=deposits; persistSave(); }
+    afterCalChange(); }); }
+});
+$('calClose').onclick=()=>{ $('calModal').style.display='none'; };
+$('calModal').onclick=e=>{ if(e.target===$('calModal')) $('calModal').style.display='none'; };
+$('expClose').onclick=()=>{ $('expModal').style.display='none'; };
+$('expModal').onclick=e=>{ if(e.target===$('expModal')) $('expModal').style.display='none'; };
+
+/* ============ 自定义日期选择器（替代原生 type=date 弹窗） ============ */
+/* 原生弹窗的「年份」其实可点但完全看不出，这里自建：年/月为主色描边按钮（带▼），点击展开年份/月份面板，交互一目了然 */
+let dpTarget=null, dpY=0, dpM=0, dpView='day', dpYearBase=0;   // dpView: day 选日期 | year 年份面板 | month 月份面板；dpYearBase=年份面板起始年（翻页用）
+const DP_YSPAN=9;   // 年份面板每屏展示的年份数
+function fmtDateCN(ds){ const p=ds.split('-').map(Number); const wd='日一二三四五六'[new Date(p[0],p[1]-1,p[2]).getDay()]; return `${p[0]}年${p[1]}月${p[2]}日 周${wd}`; }
+function setDateVal(id, ds){ $(id).value=ds; const b=$(id+'Btn'); if(b) b.textContent=fmtDateCN(ds); }
+function dpOpen(inputId){
+  dpTarget=inputId;
+  const p=($(inputId).value||todayStr()).split('-').map(Number);
+  dpY=p[0]; dpM=p[1]-1; dpView='day';
+  const cur=new Date().getFullYear();
+  dpYearBase=Math.max(1900, Math.min(cur-DP_YSPAN+1, dpY-DP_YSPAN+1));   // 让已选年份落在首屏
+  dpRender(); $('dpModal').style.display='flex';
+}
+function dpRender(){
+  $('dpYearBtn').textContent=dpY+'年'; $('dpMonthBtn').textContent=(dpM+1)+'月';
+  $('dpYearBtn').classList.toggle('on',dpView==='year');
+  $('dpMonthBtn').classList.toggle('on',dpView==='month');
+  $('dpYearGrid').style.display=dpView==='year'?'grid':'none';
+  $('dpMonthGrid').style.display=dpView==='month'?'grid':'none';
+  $('dpGrid').style.display=dpView==='day'?'grid':'none';
+  const now=new Date(), cur=now.getFullYear();
+  if(dpView==='year'){
+    const dprev=dpYearBase<=1900, dnext=dpYearBase>=cur-DP_YSPAN+1;
+    let h=`<div class="dp-pager"><button type="button" id="dpYPrev" ${dprev?'disabled':''} aria-label="更早年份">‹</button><span class="dp-pgttl">选择年份</span><button type="button" id="dpYNext" ${dnext?'disabled':''} aria-label="更晚年份">›</button></div>`;
+    for(let y=dpYearBase; y<dpYearBase+DP_YSPAN && y<=cur; y++) h+=`<button type="button" data-y="${y}" class="${y===dpY?'on':''}">${y}年</button>`;
+    $('dpYearGrid').innerHTML=h;
+  } else if(dpView==='month'){
+    let h='';
+    for(let m=0;m<12;m++){ const future=(dpY>now.getFullYear())||(dpY===now.getFullYear()&&m>now.getMonth());
+      h+=`<button type="button" data-m="${m}" class="${m===dpM?'on':''}" ${future?'disabled':''}>${m+1}月</button>`; }
+    $('dpMonthGrid').innerHTML=h;
+  } else {
+    const startDow=new Date(dpY,dpM,1).getDay(), days=new Date(dpY,dpM+1,0).getDate(), selV=$(dpTarget).value;
+    let cells='';
+    for(let i=0;i<startDow;i++) cells+='<div class="cal-cell empty"></div>';
+    for(let d=1;d<=days;d++){
+      const ds=`${dpY}-${String(dpM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      cells+=`<button type="button" class="cal-cell${ds===selV?' sel':''}" data-d="${ds}" ${ds>todayStr()?'disabled':''}>${d}</button>`;
+    }
+    $('dpGrid').innerHTML=cells;
+  }
+}
+function dpApply(ds){
+  if(!dpTarget) return;
+  setDateVal(dpTarget, ds);
+  $(dpTarget).dispatchEvent(new Event('input',{bubbles:true}));    // 复用既有 input 监听，联动刷新
+  $(dpTarget).dispatchEvent(new Event('change',{bubbles:true}));
+  $('dpModal').style.display='none';
+}
+$('dpYearBtn').onclick=()=>{ if(dpView!=='year'){ const c=new Date().getFullYear(); dpYearBase=Math.max(1900, Math.min(c-DP_YSPAN+1, dpY-DP_YSPAN+1)); } dpView=dpView==='year'?'day':'year'; dpRender(); };
+$('dpMonthBtn').onclick=()=>{ dpView=dpView==='month'?'day':'month'; dpRender(); };
+$('dpPrev').onclick=()=>{ dpM--; if(dpM<0){dpM=11;dpY--;} dpView='day'; dpRender(); };
+$('dpNext').onclick=()=>{ dpM++; if(dpM>11){dpM=0;dpY++;} dpView='day'; dpRender(); };
+$('dpYearGrid').onclick=e=>{
+  const yb=e.target.closest('#dpYPrev'); if(yb && !yb.disabled){ dpYearBase=Math.max(1900, dpYearBase-DP_YSPAN); dpRender(); return; }
+  const yn=e.target.closest('#dpYNext'); if(yn && !yn.disabled){ dpYearBase=Math.min((new Date().getFullYear())-DP_YSPAN+1, dpYearBase+DP_YSPAN); dpRender(); return; }
+  const b=e.target.closest('button[data-y]'); if(!b) return; dpY=+b.dataset.y; dpView='day'; dpRender();
+};
+$('dpMonthGrid').onclick=e=>{ const b=e.target.closest('button[data-m]'); if(!b||b.disabled) return; dpM=+b.dataset.m; dpView='day'; dpRender(); };
+$('dpGrid').onclick=e=>{ const b=e.target.closest('button[data-d]'); if(!b||b.disabled) return; dpApply(b.dataset.d); };
+$('dpToday').onclick=()=>dpApply(todayStr());
+$('dpClose').onclick=()=>{ $('dpModal').style.display='none'; };
+$('dpModal').onclick=e=>{ if(e.target===$('dpModal')) $('dpModal').style.display='none'; };
+$('dzDateBtn').onclick=()=>dpOpen('dzDate');
+$('sDateBtn').onclick=()=>dpOpen('sDate');
+
+/* ============ 多账本（分账本） ============ */
+/* 数据按 ledger_id 完全隔离：每条记录带 lid；切换账本后所有记账 / 账单 / 统计只显示当前账本。
+   持久化走 localStorage（本机数据库），如需接入真实后端，仅需把 lsGet/lsSet 替换为接口调用。 */
+const LEDGER_COLORS=['#0fa37a','#06b6d4','#ff7a59','#ffb020','#7c5cff','#e0559b','#2c6fd6','#56c596','#9aa0a8','#f0762b'];
+const LEDGER_PRESETS=[
+  {name:'公司专用账本',color:'#2c6fd6'},
+  {name:'报销账本',color:'#ff7a59'},
+  {name:'旅行账本',color:'#7c5cff'},
+  {name:'装修账本',color:'#f0762b'},
+  {name:'人情账本',color:'#e0559b'},
+  {name:'家庭账本',color:'#0fa37a'}
+];
+function luid(){ return 'L'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+let ledgers = lsGet('ledgers', [{id:'L_default',name:'我的账本',color:'#0fa37a'}]);
+if(!Array.isArray(ledgers)||!ledgers.length) ledgers=[{id:'L_default',name:'我的账本',color:'#0fa37a'}];
+/* 保证默认基础账本「我的账本」始终存在（即便旧数据丢失或被误改） */
+if(!ledgers.some(l=>l.id==='L_default')) ledgers.unshift({id:'L_default',name:'我的账本',color:'#0fa37a'});
+/* 每次打开小程序都默认显示「我的账本」（不沿用上次手动切换的账本） */
+let currentLedger = 'L_default';
+function curLedgerId(){ return currentLedger; }
+function curLedger(){ return ledgers.find(l=>l.id===currentLedger)||ledgers[0]; }
+/* 返回当前账本的记录，并保留其在全局 entries 中的索引（供编辑 / 删除用） */
+function curEntries(){ return entries.map((e,i)=>({e,i})).filter(o=>o.e.lid===currentLedger); }
+/* 仅当前账本的记录对象数组（不保留索引，用于统计） */
+function curEntriesRaw(){ return entries.filter(e=>e.lid===currentLedger); }
+function saveLedgers(){ lsSet('ledgers',ledgers); }
+function saveCurLedger(){ lsSet('curLedger',currentLedger); }
+/* 旧数据（无 lid）归入首个账本，保证从统一基准开始隔离 */
+function migrateEntries(){
+  const seed=ledgers[0]?ledgers[0].id:currentLedger;
+  let changed=false;
+  entries.forEach(e=>{ if(!e.lid){ e.lid=seed; changed=true; } });
+  if(changed) lsSet('dz_entries',entries);
+}
+function renderLedgerIndicator(){
+  const cur=curLedger();
+  ['dzLedgerDot','ledgerCurDot'].forEach(id=>{ const el=$(id); if(el) el.style.background=cur.color; });
+  ['dzLedgerName','ledgerCurName'].forEach(id=>{ const el=$(id); if(el) el.textContent=cur.name; });
+}
+/* 弹窗内账本管理列表：点卡片区切换账本；按钮区完成重命名 / 换色 / 删除（默认账本不可删） */
+function renderLedgerSwitcher(){
+  const box=$('ledgerModalGrid'); if(!box) return;
+  box.innerHTML=ledgers.map(l=>{
+    const isDef=l.id==='L_default';
+    return `
+    <div class="lmodal-card ${l.id===currentLedger?'cur':''}" data-id="${l.id}">
+      <span class="lc-main" data-pick="${l.id}">
+        <span class="ldot" style="background:${l.color}"></span>
+        <span class="nm">${esc(l.name)}</span>
+        ${isDef?'<span class="lc-def" data-i="ledgerDefault">默认</span>':''}
+        ${l.id===currentLedger?'<span class="larr">✓</span>':''}
+      </span>
+      <span class="lc-actions">
+        <button data-act="rename" data-id="${l.id}" data-i="rename">重命名</button>
+        <button data-act="color" data-id="${l.id}" data-i="changeColor">换色</button>
+        ${isDef?'':`<button data-act="del" data-id="${l.id}" data-i="delete">删除</button>`}
+      </span>
+    </div>`;}).join('');
+}
+function refreshLedgerViews(){ renderLedgerIndicator(); renderLedgerSwitcher(); renderDz(); renderBudget(); renderLdgAll(); }
+
+/* —— 账本页：汇总查看（按账本独立过滤，仅查看、不影响记账） —— */
+function renderLdgChips(){
+  const box=$('ldgChips'); if(!box) return;
+  box.innerHTML=ledgers.map(l=>`<button class="${l.id===currentLedger?'on':''}" data-id="${l.id}"><span class="ldot" style="background:${l.color}"></span>${esc(l.name)}</button>`).join('');
+}
+function renderLdgSummary(){
+  const l=ledgers.find(x=>x.id===currentLedger); if(!l) return;
+  const list=entries.filter(e=>e.lid===currentLedger);       // 只取该账本数据，绝不混入其他账本
+  const ym=curMonth();
+  const mInc=list.filter(e=>e.type==='inc'&&e.date&&e.date.slice(0,7)===ym).reduce((s,e)=>s+e.amt,0);
+  const mExp=list.filter(e=>e.type==='exp'&&e.date&&e.date.slice(0,7)===ym).reduce((s,e)=>s+e.amt,0);
+  const tInc=list.filter(e=>e.type==='inc').reduce((s,e)=>s+e.amt,0);
+  const tExp=list.filter(e=>e.type==='exp').reduce((s,e)=>s+e.amt,0);
+  const dot=$('ldgViewDot'), nm=$('ldgViewName');
+  if(dot) dot.style.background=l.color;
+  if(nm) nm.textContent=l.name;
+  const st=$('ldgStats');
+  if(st) st.innerHTML=`
+    <div class="stat inc"><div class="k">${T('kInc')}</div><div class="v">${fmt(mInc)}</div></div>
+    <div class="stat exp"><div class="k">${T('kExp')}</div><div class="v">${fmt(mExp)}</div></div>
+    <div class="stat"><div class="k">${T('kBal')}</div><div class="v">${fmt(mInc-mExp)}</div></div>
+    <div class="stat inc"><div class="k">${T('ldgTotalInc')}</div><div class="v">${fmt(tInc)}</div></div>
+    <div class="stat exp"><div class="k">${T('ldgTotalExp')}</div><div class="v">${fmt(tExp)}</div></div>
+    <div class="stat"><div class="k">${T('ldgTotalBal')}</div><div class="v">${fmt(tInc-tExp)}</div></div>`;
+}
+/* 各账本汇总一览：账本过多时默认收起（只显示前几个），可一键展开 / 收起 */
+let ldgOvOpen=false;
+const LDG_OV_PREVIEW=5;
+function renderLdgOverview(){
+  const box=$('ldgOverview'); if(!box) return;
+  const rows=ledgers.map(l=>{
+    const list=entries.filter(e=>e.lid===l.id);
+    const ti=list.filter(e=>e.type==='inc').reduce((s,e)=>s+e.amt,0);
+    const te=list.filter(e=>e.type==='exp').reduce((s,e)=>s+e.amt,0);
+    return `<div class="ldovrow">
+      <span class="ldot" style="background:${l.color}"></span>
+      <span class="ov-nm">${esc(l.name)}</span>
+      <span class="ov-val inc">↑${fmt(ti)}</span>
+      <span class="ov-val exp">↓${fmt(te)}</span>
+      <span class="ov-val bal">${T('kBal')} ${fmt(ti-te)}</span>
+    </div>`;});
+  const many=rows.length>LDG_OV_PREVIEW;
+  box.innerHTML=(ldgOvOpen?rows:rows.slice(0,LDG_OV_PREVIEW)).join('')
+    +(many?`<button class="ldov-toggle" id="ldgOvToggle" type="button">${ldgOvOpen?'▲ '+T('foldUp'):'▼ '+T('expandAll')+'（'+rows.length+'）'}</button>`:'');
+  const btn=$('ldgOvToggle');
+  if(btn) btn.onclick=()=>{ ldgOvOpen=!ldgOvOpen; renderLdgOverview(); };
+}
+function renderLdgAll(){
+  renderLdgChips(); renderLdgSummary(); renderLdgOverview();
+  fillTrendPeriod(ldTrend,'ldgYear','ldgMonth','ldgDay', currentLedger);
+  fillTrendCat(ldTrend,'ldgCat');
+  renderLdChart();
+}
+/* 切换账本：立即刷新账单与统计，绝不混入其他账本数据 */
+function switchLedger(id){
+  if(!ledgers.some(l=>l.id===id)) return;
+  currentLedger=id; saveCurLedger(); refreshLedgerViews();
+  toast(`已切换到「${curLedger().name}」`);
+}
+/* 创建 / 编辑账本 —— 重命名与换色为互不影响的两个独立操作，编辑时原地覆盖原账本 */
+let editLedgerId=null, editColor=LEDGER_COLORS[0], ledgerEditMode='full';  // mode: 'full'创建 | 'name'仅改名 | 'color'仅换色
+function openLedgerEdit(id, mode){
+  editLedgerId = id||null;
+  ledgerEditMode = mode||'full';
+  const l = id ? ledgers.find(x=>x.id===id) : null;
+  const nameRow=$('ledgerNameRow'), colorRow=$('ledgerColorRow');
+  if(ledgerEditMode==='color'){                       // 仅换色：隐藏名称，避免误改
+    nameRow.style.display='none'; colorRow.style.display='block';
+    $('ledgerNameInput').value='';
+    editColor = l ? l.color : LEDGER_COLORS[0];
+    $('ledgerEditTitle').textContent = T('changeColor');
+  } else if(ledgerEditMode==='name'){                 // 仅重命名：隐藏颜色，避免误改
+    nameRow.style.display='block'; colorRow.style.display='none';
+    $('ledgerNameInput').value = l ? l.name : '';
+    $('ledgerEditTitle').textContent = T('rename');
+  } else {                                            // 新建：名称 + 颜色
+    nameRow.style.display='block'; colorRow.style.display='block';
+    $('ledgerNameInput').value = l ? l.name : '';
+    editColor = l ? l.color : LEDGER_COLORS[0];
+    $('ledgerEditTitle').textContent = l ? T('editLedger') : T('createLedger');
+  }
+  renderLedgerSwRow();
+  $('ledgerEditModal').style.display='flex';
+  if(ledgerEditMode!=='color') $('ledgerNameInput').focus();
+}
+function renderLedgerSwRow(){
+  const row=$('ledgerSwRow'); if(!row) return;
+  row.innerHTML=LEDGER_COLORS.map(c=>`<span class="sw ${c===editColor?'on':''}" style="background:${c}" data-c="${c}"></span>`).join('');
+}
+function saveLedger(){
+  const l = editLedgerId ? ledgers.find(x=>x.id===editLedgerId) : null;
+  if(ledgerEditMode==='color'){                        // 仅改颜色，名称与类型保持不变
+    if(l) l.color=editColor;
+    saveLedgers(); $('ledgerEditModal').style.display='none'; refreshLedgerViews();
+    toast('账本颜色已更新'); return;
+  }
+  const name=($('ledgerNameInput').value||'').trim();
+  if(!name){ toast('请输入账本名称'); return; }
+  if(ledgerEditMode==='name'){                         // 仅改名称，颜色与类型保持不变（原地覆盖同一账本）
+    if(l) l.name=name;
+    saveLedgers(); $('ledgerEditModal').style.display='none'; refreshLedgerViews();
+    toast('账本名称已更新'); return;
+  }
+  /* 新建账本 */
+  if(ledgers.some(x=>x.name===name)){ toast('已存在同名账本'); return; }
+  const newId=luid();
+  ledgers.push({id:newId,name,color:editColor});
+  currentLedger=newId; saveCurLedger();          // 新建后直接切到新账本（各账本预算/数据独立，新账本需重新设定预算）
+  saveLedgers(); $('ledgerEditModal').style.display='none'; refreshLedgerViews();
+  toast(`已创建账本「${name}」`);
+}
+function deleteLedger(id){
+  if(id==='L_default'){ toast(T('ledgerDefaultKeep')); return; }   // 默认账本（我的账本）不可删除
+  if(ledgers.length<=1){ toast('至少保留一个账本'); return; }
+  const l=ledgers.find(x=>x.id===id); if(!l) return;
+  /* 二次强确认，明确提示将清除该账本全部账单且不可恢复 */
+  confirmDel(T('confirmTitle'), ()=>{
+    entries=entries.filter(e=>e.lid!==id); lsSet('dz_entries',entries);          // 清除该账本全部账单记录
+    ledgers=ledgers.filter(x=>x.id!==id); saveLedgers();
+    if(currentLedger===id){ currentLedger=ledgers[0].id; saveCurLedger(); }
+    refreshLedgerViews(); renderSrcList();
+    toast(`已删除账本「${l.name}」`);
+  }, '删除账本会清除该账本内全部账单记录，数据不可恢复，确定删除？');
+}
+/* 账本事件绑定（重命名 / 换色 / 删除在「切换 / 选择账本」弹窗内完成） */
+$('ledgerSwitchBtn').onclick=()=>{ renderLedgerSwitcher(); $('ledgerModal').style.display='flex'; };
+$('dzLedgerBar').onclick=()=>{ renderLedgerSwitcher(); $('ledgerModal').style.display='flex'; };
+$('dzCreateLedger').onclick=()=>openLedgerEdit(null);        // 在「编辑账本」弹窗中以创建模式打开（层级最高）
+$('ledgerModalClose').onclick=()=>{ $('ledgerModal').style.display='none'; };
+$('ledgerModal').onclick=e=>{ if(e.target===$('ledgerModal')) $('ledgerModal').style.display='none'; };
+$('ledgerEditClose').onclick=()=>{ $('ledgerEditModal').style.display='none'; };
+$('ledgerEditModal').onclick=e=>{ if(e.target===$('ledgerEditModal')) $('ledgerEditModal').style.display='none'; };
+$('ledgerSaveBtn').onclick=saveLedger;
+$('ledgerSwRow').addEventListener('click',e=>{ const s=e.target.closest('.sw'); if(!s) return; editColor=s.dataset.c; renderLedgerSwRow(); });
+$('ledgerModalGrid').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-act]');
+  if(b){                                                          // 管理按钮：重命名 / 换色 / 删除
+    const id=b.dataset.id;
+    if(b.dataset.act==='rename') openLedgerEdit(id,'name');
+    else if(b.dataset.act==='color') openLedgerEdit(id,'color');
+    else if(b.dataset.act==='del') deleteLedger(id);
+    return;
+  }
+  const c=e.target.closest('.lc-main'); if(!c) return;            // 点卡片主体：切换账本
+  switchLedger(c.dataset.pick);
+  $('ledgerModal').style.display='none';
+});
+/* —— 账本页：查看账本选择与趋势控件 —— */
+$('ldgChips').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-id]'); if(!b) return;
+  switchLedger(b.dataset.id);   // 与「切换账本」弹窗同步：查看账本即切换当前记账账本
+});
+$('ldgYear').addEventListener('change', e=>{ ldTrend.y=e.target.value; fillTrendPeriod(ldTrend,'ldgYear','ldgMonth','ldgDay', currentLedger); renderLdChart(); });
+$('ldgMonth').addEventListener('change', e=>{ ldTrend.m=e.target.value; fillTrendPeriod(ldTrend,'ldgYear','ldgMonth','ldgDay', currentLedger); renderLdChart(); });
+$('ldgDay').addEventListener('change', e=>{ ldTrend.d=e.target.value; renderLdChart(); });
+$('ldgKType').addEventListener('click', e=>{ const b=e.target.closest('button[data-k]'); if(!b) return; ldTrend.k=b.dataset.k; segOn('ldgKType',b); fillTrendCat(ldTrend,'ldgCat'); renderLdChart(); });
+$('ldgCType').addEventListener('click', e=>{ const b=e.target.closest('button[data-c]'); if(!b) return; ldTrend.ctype=b.dataset.c; segOn('ldgCType',b); renderLdChart(); });
+$('ldgCat').addEventListener('change', e=>{ ldTrend.cat=e.target.value; renderLdChart(); });
+
+/* ============ 事件绑定 ============ */
+const bind=(ids,fn)=>ids.forEach(id=>{ const el=$(id); if(el) el.addEventListener('input',fn); });
+/* 目标金额输入已改为「设置目标金额」按钮 + 确定流程（renderTargetBox 内自带监听），不再全局绑定 */
+
+/* ============ 设置中心 ============ */
+const THEMES={
+  ink:  {p:'#0fa37a',p2:'#06b6d4',r:15,g:163,b:122},
+  slate:{p:'#3a6ea5',p2:'#5b8fc4',r:58,g:110,b:165},
+  sage: {p:'#5a8a6b',p2:'#7aa98a',r:90,g:138,b:107},
+  mauve: {p:'#7a6a8a',p2:'#9a8aaa',r:122,g:106,b:138},
+  warm: {p:'#9a7d4a',p2:'#b89a6a',r:154,g:125,b:74},
+  teal: {p:'#4a8a8a',p2:'#6aaaaa',r:74,g:138,b:138},
+  clay: {p:'#9a5a4a',p2:'#ba7a6a',r:154,g:90,b:74}
+};
+let currentTheme='ink';
+function applyTheme(key){
+  const t=THEMES[key]; if(!t) return; currentTheme=key;
+  const root=document.documentElement;
+  root.style.setProperty('--primary',t.p);
+  root.style.setProperty('--primary2',t.p2);
+  if(!root.classList.contains('night')){ root.style.setProperty('--pr',t.r); root.style.setProperty('--pg',t.g); root.style.setProperty('--pb',t.b); }
+  document.querySelectorAll('#thRow .sw').forEach(x=>x.classList.toggle('on',x.dataset.t===key));
+  const s=lsGet('dz_settings',{}); s.theme=key; lsSet('dz_settings',s);
+  renderLdChart(); renderDz();   // 主题色变化后重绘趋势图与环形图配色
+}
+document.querySelectorAll('#thRow .sw').forEach(x=>x.onclick=()=>applyTheme(x.dataset.t));
+document.querySelectorAll('#szRow button').forEach(b=>b.onclick=()=>{
+  const v=b.dataset.s;
+  document.documentElement.style.setProperty('--scale',v);
+  document.querySelectorAll('#szRow button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  const s=lsGet('dz_settings',{}); s.scale=v; lsSet('dz_settings',s);
+  renderLdChart(); renderDz();
+});
+$('swEye').onclick=()=>{
+  const on=$('swEye').classList.toggle('on');
+  document.documentElement.classList.toggle('eyecare',on);
+  const s=lsGet('dz_settings',{}); s.eyecare=on; lsSet('dz_settings',s);
+  renderLdChart(); renderDz();   // 模式切换后重绘环形图（画布文字跟随深/浅色）
+};
+function setNight(on){
+  const root=document.documentElement; root.classList.toggle('night',on);
+  if(on){ root.style.setProperty('--pr',80); root.style.setProperty('--pg',200); root.style.setProperty('--pb',160); }
+  else { const t=THEMES[currentTheme]; root.style.setProperty('--pr',t.r); root.style.setProperty('--pg',t.g); root.style.setProperty('--pb',t.b); }
+  const s=lsGet('dz_settings',{}); s.night=on; lsSet('dz_settings',s);
+  renderLdChart(); renderDz();   // 夜间模式：环形图文字重绘为黑底白字
+}
+$('swNight').onclick=()=>setNight($('swNight').classList.toggle('on'));
+document.querySelectorAll('#patRow button').forEach(b=>b.onclick=()=>{
+  const p=b.dataset.p;
+  document.body.classList.remove('pat-none','pat-dots','pat-grid');
+  if(p!=='none') document.body.classList.add('pat-'+p);
+  document.querySelectorAll('#patRow button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  const s=lsGet('dz_settings',{}); s.pattern=p; lsSet('dz_settings',s);
+});
+$('langSel').onchange=e=>{ applyLang(e.target.value); };
+$('setBtn').onclick=()=>{ $('modal').style.display='flex'; };
+$('modalClose').onclick=()=>{ $('modal').style.display='none'; };
+$('modal').onclick=e=>{ if(e.target===$('modal')) $('modal').style.display='none'; };
+
+/* ============ 应用已保存的设置 ============ */
+(function(){
+  const s=lsGet('dz_settings',{});
+  if(s.scale){ document.documentElement.style.setProperty('--scale',s.scale);
+    document.querySelectorAll('#szRow button').forEach(x=>x.classList.toggle('on',x.dataset.s===String(s.scale))); }
+  if(s.theme&&THEMES[s.theme]) applyTheme(s.theme);
+  if(s.eyecare){ document.documentElement.classList.add('eyecare'); $('swEye').classList.add('on'); }
+  if(s.night){ $('swNight').classList.add('on'); setNight(true); }
+  if(s.pattern&&s.pattern!=='none') document.body.classList.add('pat-'+s.pattern);
+  if(s.pattern){ document.querySelectorAll('#patRow button').forEach(x=>x.classList.toggle('on',x.dataset.p===s.pattern)); }
+  if(s.lang&&I18N[s.lang]){ curLang=s.lang; $('langSel').value=s.lang; }
+})();
+migrateEntries();                                   // 旧记录归入首个账本，开启隔离
+if(!ledgers.some(l=>l.id===currentLedger)) currentLedger=ledgers[0].id;
+renderLedgerIndicator(); renderLedgerSwitcher();
+applyLang(curLang);
+renderCatWrap(); renderDz(); renderBudget(); renderTargetBox(); renderDep(); computeSave(); renderSrcList();
+
+/* —— 账本汇总 · 趋势图 resize 重绘 —— */
+let dzChartRT; window.addEventListener('resize', ()=>{ clearTimeout(dzChartRT); dzChartRT=setTimeout(()=>{ renderLdChart(); renderDz(); }, 150); });
+</script>
+</body>
+</html>
